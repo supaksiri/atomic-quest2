@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚛️ Atomic Model Quest – ภารกิจพิชิตแบบจำลองอะตอม</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #a8d8f0;
+    --sky-dark: #5eb3e4;
+    --sky-light: #e0f3fc;
+    --purple: #c9b1e8;
+    --purple-dark: #9b72d0;
+    --purple-light: #ede5f8;
+    --mint: #a8e6cf;
+    --mint-dark: #4caf82;
+    --mint-light: #e2f7ee;
+    --white: #ffffff;
+    --text: #2d3748;
+    --text-light: #718096;
+    --gold: #f6c90e;
+    --red: #fc6b6b;
+    --green: #4caf82;
+    --bg: #f0f8ff;
+    --card: #ffffff;
+    --shadow: 0 4px 20px rgba(94,179,228,0.18);
+    --shadow-lg: 0 8px 40px rgba(94,179,228,0.25);
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ===== STARS BG ===== */
+  .stars-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .star {
+    position: absolute; border-radius: 50%;
+    background: #fff; animation: twinkle 3s infinite;
+  }
+  @keyframes twinkle {
+    0%,100%{opacity:.2;transform:scale(1)}
+    50%{opacity:.8;transform:scale(1.3)}
+  }
+
+  /* ===== FLOATING ATOMS BG ===== */
+  .atom-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .float-atom {
+    position: absolute; font-size: 2rem; opacity: .08;
+    animation: floatUp 8s infinite;
+  }
+  @keyframes floatUp {
+    0%{transform:translateY(100vh) rotate(0deg);opacity:.08}
+    100%{transform:translateY(-120px) rotate(360deg);opacity:0}
+  }
+
+  /* ===== COMMON ===== */
+  .z1 { position: relative; z-index: 1; }
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 24px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 14px 28px; border: none; border-radius: 50px;
+    font-family: 'Sarabun', sans-serif; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all .2s; text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--sky-dark), var(--purple-dark));
+    color: #fff; box-shadow: 0 4px 16px rgba(155,114,208,.4);
+  }
+  .btn-primary:hover { box-shadow: 0 6px 24px rgba(155,114,208,.55); transform: translateY(-2px); }
+  .btn-gold {
+    background: linear-gradient(135deg, #f6c90e, #ff9800);
+    color: #fff; box-shadow: 0 4px 16px rgba(246,201,14,.4);
+  }
+  .btn-mint {
+    background: linear-gradient(135deg, var(--mint-dark), #2e8b57);
+    color: #fff; box-shadow: 0 4px 16px rgba(76,175,130,.4);
+  }
+  .btn-sm { padding: 10px 20px; font-size: .9rem; }
+  .btn-outline {
+    background: transparent; border: 2px solid var(--sky-dark);
+    color: var(--sky-dark);
+  }
+
+  /* ===== HEADER BAR ===== */
+  .hud {
+    background: linear-gradient(135deg, var(--sky-dark) 0%, var(--purple-dark) 100%);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.15);
+  }
+  .hud-title { color: #fff; font-weight: 700; font-size: .95rem; }
+  .hud-hearts { display: flex; gap: 4px; }
+  .hud-heart { font-size: 1.3rem; transition: all .3s; }
+  .hud-heart.lost { filter: grayscale(1); opacity: .35; transform: scale(.85); }
+  .hud-score { color: #fff; font-weight: 800; font-size: 1.1rem; }
+  .hud-score span { color: var(--gold); }
+  .progress-bar-wrap { height: 6px; background: rgba(255,255,255,.25); border-radius: 3px; flex: 1; margin: 0 12px; }
+  .progress-bar-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width .4s; }
+
+  /* ===== LOGIN SCREEN ===== */
+  #screen-login {
+    background: linear-gradient(160deg, #dbeeff 0%, #e8d8f8 50%, #d8f4eb 100%);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .login-logo {
+    font-size: 5rem; margin-bottom: 8px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .login-title {
+    font-size: 1.7rem; font-weight: 800; text-align: center; line-height: 1.3;
+    background: linear-gradient(135deg, var(--sky-dark), var(--purple-dark));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 4px;
+  }
+  .login-sub { color: var(--text-light); font-size: .9rem; text-align: center; margin-bottom: 24px; }
+  .login-card { width: 100%; max-width: 420px; }
+  .field-label { font-weight: 600; font-size: .9rem; color: var(--text); margin-bottom: 6px; display: block; }
+  .field-input {
+    width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0;
+    border-radius: var(--radius-sm); font-family: 'Sarabun', sans-serif;
+    font-size: 1rem; transition: all .2s; outline: none; background: #fafbff;
+  }
+  .field-input:focus { border-color: var(--sky-dark); box-shadow: 0 0 0 3px rgba(94,179,228,.2); }
+  .field-group { margin-bottom: 18px; }
+  .credit-bar {
+    text-align: center; font-size: .75rem; color: var(--text-light);
+    margin-top: 16px; line-height: 1.6;
+  }
+
+  /* ===== STORY SCREEN ===== */
+  #screen-story {
+    background: #0a0a1a;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .story-content { text-align: center; max-width: 480px; }
+  .story-year {
+    font-size: 3.5rem; font-weight: 800;
+    background: linear-gradient(135deg, #f6c90e, #ff9800);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    animation: glitch .1s infinite;
+  }
+  @keyframes glitch {
+    0%,90%,100%{transform:none}
+    95%{transform:translate(-2px,1px)}
+    97%{transform:translate(2px,-1px)}
+  }
+  .story-text { color: #ccc; font-size: 1.05rem; line-height: 1.9; margin: 16px 0; }
+  .story-text strong { color: var(--sky); }
+  .story-emoji { font-size: 4rem; margin: 16px 0; animation: shake 1s infinite; }
+  @keyframes shake {
+    0%,100%{transform:rotate(0)}
+    25%{transform:rotate(-5deg)}
+    75%{transform:rotate(5deg)}
+  }
+
+  /* ===== STAGE MAP ===== */
+  #screen-map {
+    background: linear-gradient(160deg, #dbeeff 0%, #e8d8f8 60%, #d8f4eb 100%);
+    padding: 20px;
+  }
+  .map-header { text-align: center; margin-bottom: 20px; }
+  .map-title { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+  .player-name-tag {
+    display: inline-block; background: white; border-radius: 50px;
+    padding: 6px 16px; font-size: .9rem; font-weight: 600;
+    box-shadow: var(--shadow); color: var(--purple-dark); margin-top: 8px;
+  }
+  .stage-grid { display: flex; flex-direction: column; gap: 12px; }
+  .stage-card {
+    background: white; border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: all .25s; border: 3px solid transparent;
+    position: relative; overflow: hidden;
+  }
+  .stage-card:hover { transform: translateX(6px); border-color: var(--sky-dark); }
+  .stage-card.locked { opacity: .5; cursor: not-allowed; }
+  .stage-card.completed { border-color: var(--mint-dark); }
+  .stage-card.completed::after {
+    content: '✅'; position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%); font-size: 1.5rem;
+  }
+  .stage-icon { font-size: 2.8rem; flex-shrink: 0; }
+  .stage-info h3 { font-size: 1rem; font-weight: 700; color: var(--text); }
+  .stage-info p { font-size: .8rem; color: var(--text-light); margin-top: 3px; }
+  .stage-badge {
+    font-size: .7rem; background: var(--sky-light); color: var(--sky-dark);
+    padding: 3px 10px; border-radius: 50px; font-weight: 600; margin-top: 5px;
+    display: inline-block;
+  }
+  .stage-score-badge {
+    font-size: .75rem; color: var(--mint-dark); font-weight: 700;
+  }
+  .master-card {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: white; margin-top: 4px;
+  }
+  .master-card:hover { border-color: var(--gold); }
+  .master-card .stage-info h3 { color: #fff; }
+  .master-card .stage-info p { color: #aaa; }
+  .master-card .stage-badge { background: rgba(246,201,14,.2); color: var(--gold); }
+  .total-score-bar {
+    background: white; border-radius: var(--radius); padding: 14px 20px;
+    box-shadow: var(--shadow); text-align: center; margin-top: 12px;
+  }
+  .total-score-bar span { font-size: 1.4rem; font-weight: 800; color: var(--purple-dark); }
+
+  /* ===== REVIEW SCREEN ===== */
+  #screen-review {
+    background: var(--bg); padding: 16px;
+  }
+  .review-header {
+    background: linear-gradient(135deg, var(--sky-dark), var(--purple-dark));
+    border-radius: var(--radius); padding: 20px; text-align: center;
+    color: white; margin-bottom: 16px;
+  }
+  .review-header h2 { font-size: 1.3rem; font-weight: 800; }
+  .review-infographic {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px;
+  }
+  .review-section {
+    padding: 16px; border-bottom: 1px solid #f0f0f0;
+  }
+  .review-section:last-child { border-bottom: none; }
+  .review-section h4 {
+    font-size: .85rem; font-weight: 700; color: var(--sky-dark);
+    text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+  }
+  .review-section p { font-size: .9rem; line-height: 1.7; color: var(--text); }
+  .review-atom-art { text-align: center; font-size: 5rem; padding: 8px; }
+  .review-key-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .fact-chip {
+    background: var(--purple-light); color: var(--purple-dark);
+    padding: 5px 12px; border-radius: 50px; font-size: .8rem; font-weight: 600;
+  }
+  .fact-chip.mint { background: var(--mint-light); color: var(--mint-dark); }
+  .fact-chip.sky { background: var(--sky-light); color: var(--sky-dark); }
+
+  /* ===== GAME SCREEN ===== */
+  #screen-game { background: var(--bg); }
+  .game-body { padding: 16px; flex: 1; }
+  .question-card {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; margin-bottom: 14px;
+  }
+  .question-img-wrap {
+    background: linear-gradient(135deg, var(--sky-light), var(--purple-light));
+    padding: 20px; text-align: center;
+    font-size: 6rem; line-height: 1; min-height: 120px;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+  }
+  .question-img-caption {
+    font-size: .75rem; color: var(--text-light); margin-top: 6px;
+  }
+  .question-text {
+    padding: 16px 16px 8px; font-size: 1rem; font-weight: 600; line-height: 1.65;
+    color: var(--text);
+  }
+  .question-meta {
+    padding: 0 16px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .question-num { font-size: .8rem; color: var(--text-light); font-weight: 600; }
+  .btn-hint {
+    background: var(--gold); color: #fff; border: none; border-radius: 50px;
+    padding: 6px 14px; font-size: .8rem; font-weight: 700; cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .hint-box {
+    margin: 0 16px 12px; background: #fff8e1; border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: .85rem; color: #7c6200;
+    border-left: 3px solid var(--gold); display: none;
+  }
+  .hint-box.show { display: block; }
+  .choices { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn {
+    width: 100%; padding: 14px 16px; background: #fafbff;
+    border: 2px solid #e2e8f0; border-radius: var(--radius-sm);
+    font-family: 'Sarabun', sans-serif; font-size: .95rem; font-weight: 500;
+    text-align: left; cursor: pointer; transition: all .2s; color: var(--text);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .choice-btn:hover:not(:disabled) { border-color: var(--sky-dark); background: var(--sky-light); }
+  .choice-btn.correct { background: var(--mint-light); border-color: var(--mint-dark); color: var(--mint-dark); font-weight: 700; }
+  .choice-btn.wrong { background: #ffe5e5; border-color: var(--red); color: var(--red); }
+  .choice-btn:disabled { cursor: not-allowed; }
+  .choice-label {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #e2e8f0; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .85rem; flex-shrink: 0; transition: all .2s;
+  }
+  .choice-btn.correct .choice-label { background: var(--mint-dark); color: #fff; }
+  .choice-btn.wrong .choice-label { background: var(--red); color: #fff; }
+
+  .feedback-box {
+    margin: 0 16px 14px; border-radius: var(--radius-sm); padding: 12px 14px;
+    font-size: .9rem; line-height: 1.6; display: none;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-box.correct { background: var(--mint-light); color: #1a5c3a; border-left: 4px solid var(--mint-dark); }
+  .feedback-box.wrong { background: #ffe5e5; color: #8b1a1a; border-left: 4px solid var(--red); }
+  .btn-next { margin: 0 16px 16px; display: none; }
+  .btn-next.show { display: block; width: calc(100% - 32px); }
+
+  /* ===== GAME OVER ===== */
+  #screen-gameover {
+    background: linear-gradient(160deg, #1a0505, #2d0a1a);
+    align-items: center; justify-content: center; padding: 24px; text-align: center;
+  }
+  .gameover-emoji { font-size: 5rem; animation: shake 1s infinite; }
+  .gameover-title { font-size: 2rem; font-weight: 800; color: #ff6b6b; margin: 16px 0 8px; }
+  .gameover-text { color: #ccc; line-height: 1.7; margin-bottom: 24px; }
+
+  /* ===== STAGE CLEAR ===== */
+  #screen-stageclear {
+    background: linear-gradient(160deg, #dbeeff, #e8d8f8);
+    align-items: center; justify-content: center; padding: 24px; text-align: center;
+  }
+  .clear-emoji { font-size: 5rem; animation: bounce .6s infinite alternate; }
+  @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-12px)} }
+  .clear-title { font-size: 1.8rem; font-weight: 800; color: var(--purple-dark); margin: 12px 0; }
+  .clear-score { font-size: 3rem; font-weight: 800; color: var(--sky-dark); }
+  .clear-stars { font-size: 2rem; margin: 8px 0 16px; }
+
+  /* ===== CERTIFICATE ===== */
+  #screen-cert {
+    background: linear-gradient(160deg, #dbeeff 0%, #e8d8f8 60%, #d8f4eb 100%);
+    padding: 20px; align-items: center;
+  }
+  #cert-canvas-wrap {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    padding: 24px; width: 100%; max-width: 480px; margin: 0 auto;
+    border: 4px solid var(--sky);
+  }
+  .cert-top { text-align: center; margin-bottom: 16px; }
+  .cert-logo { font-size: 3.5rem; }
+  .cert-title1 { font-size: 1.1rem; font-weight: 800; color: var(--purple-dark); letter-spacing: 1px; }
+  .cert-title2 { font-size: .85rem; color: var(--text-light); }
+  .cert-divider { height: 3px; background: linear-gradient(90deg, var(--sky-dark), var(--purple-dark), var(--mint-dark)); border-radius: 2px; margin: 12px 0; }
+  .cert-body { text-align: center; }
+  .cert-presents { font-size: .85rem; color: var(--text-light); }
+  .cert-name { font-size: 1.6rem; font-weight: 800; color: var(--text); margin: 6px 0; }
+  .cert-class { font-size: .9rem; color: var(--text-light); }
+  .cert-achievement { font-size: .9rem; color: var(--text); margin: 12px 0; line-height: 1.7; }
+  .cert-score-box {
+    display: flex; gap: 12px; justify-content: center; margin: 12px 0;
+  }
+  .cert-score-item {
+    background: var(--sky-light); border-radius: var(--radius-sm);
+    padding: 10px 16px; text-align: center; flex: 1;
+  }
+  .cert-score-item .num { font-size: 1.6rem; font-weight: 800; color: var(--sky-dark); }
+  .cert-score-item .lbl { font-size: .75rem; color: var(--text-light); }
+  .cert-bottom { text-align: center; margin-top: 14px; }
+  .cert-school { font-size: .85rem; font-weight: 700; color: var(--purple-dark); }
+  .cert-year { font-size: .8rem; color: var(--text-light); }
+  .cert-sign { margin-top: 12px; font-size: .8rem; color: var(--text-light); border-top: 1px solid #e2e8f0; padding-top: 10px; }
+
+  /* ===== FINAL SCORE ===== */
+  #screen-final {
+    background: linear-gradient(160deg, #dbeeff 0%, #e8d8f8 60%, #d8f4eb 100%);
+    align-items: center; justify-content: center; padding: 24px; text-align: center;
+  }
+  .final-emoji { font-size: 5rem; }
+  .final-title { font-size: 1.8rem; font-weight: 800; color: var(--purple-dark); margin: 12px 0; }
+  .final-grade {
+    font-size: 4rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--sky-dark), var(--purple-dark));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .final-pct { font-size: 1.1rem; color: var(--text-light); margin-bottom: 20px; }
+  .final-breakdown {
+    background: white; border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); margin-bottom: 20px; text-align: left;
+    width: 100%; max-width: 400px;
+  }
+  .breakdown-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid #f0f4f8; font-size: .9rem;
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-row .stage-name { color: var(--text); }
+  .breakdown-row .stage-pts { font-weight: 700; color: var(--purple-dark); }
+
+  /* ===== DASHBOARD ===== */
+  #screen-dashboard {
+    background: var(--bg); padding: 16px;
+  }
+  .dash-header {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: white; border-radius: var(--radius); padding: 20px;
+    text-align: center; margin-bottom: 16px;
+  }
+  .dash-header h2 { font-size: 1.3rem; font-weight: 800; }
+  .dash-header p { color: #aaa; font-size: .85rem; margin-top: 4px; }
+  .dash-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;
+  }
+  .dash-stat {
+    background: white; border-radius: var(--radius-sm); padding: 14px;
+    box-shadow: var(--shadow); text-align: center;
+  }
+  .dash-stat .num { font-size: 1.5rem; font-weight: 800; color: var(--purple-dark); }
+  .dash-stat .lbl { font-size: .7rem; color: var(--text-light); }
+  .dash-table-wrap {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .dash-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .dash-table th {
+    background: linear-gradient(135deg, var(--sky-dark), var(--purple-dark));
+    color: white; padding: 10px 8px; text-align: left; font-weight: 700;
+    font-size: .75rem;
+  }
+  .dash-table td { padding: 10px 8px; border-bottom: 1px solid #f0f4f8; }
+  .dash-table tr:last-child td { border-bottom: none; }
+  .dash-table tr:nth-child(even) td { background: #fafbff; }
+  .pass-badge {
+    padding: 3px 10px; border-radius: 50px; font-size: .7rem; font-weight: 700;
+  }
+  .pass-badge.pass { background: var(--mint-light); color: var(--mint-dark); }
+  .pass-badge.fail { background: #ffe5e5; color: var(--red); }
+  .chart-bar-wrap { display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+  .chart-row { display: flex; align-items: center; gap: 8px; }
+  .chart-label { font-size: .78rem; width: 80px; text-align: right; color: var(--text-light); }
+  .chart-bar-bg { flex: 1; height: 22px; background: #f0f4f8; border-radius: 4px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: .75rem; color: white; font-weight: 700; transition: width .5s; }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation: fadeInUp .4s ease both; }
+  @keyframes popIn { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
+  .pop-in { animation: popIn .35s cubic-bezier(.34,1.56,.64,1) both; }
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:380px) {
+    .login-title { font-size: 1.4rem; }
+    .stage-icon { font-size: 2.2rem; }
+    .question-img-wrap { font-size: 4.5rem; min-height: 100px; }
+  }
+  @media(min-width:600px) {
+    .game-body, #screen-review > *:not(.hud), #screen-map > * { max-width: 540px; margin-left: auto; margin-right: auto; width: 100%; }
+  }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #2d3748; color: white; padding: 12px 24px; border-radius: 50px;
+    font-size: .9rem; font-weight: 600; z-index: 9999; transition: all .35s;
+    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    pointer-events: none; opacity: 0;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ===== MINIGAME THOMSON ===== */
+  .mini-game-wrap {
+    background: linear-gradient(135deg, var(--sky-light), var(--purple-light));
+    border-radius: var(--radius); padding: 16px; text-align: center; margin: 0 16px 14px;
+  }
+  .mini-atom-target {
+    width: 120px; height: 120px; border-radius: 50%; margin: 0 auto;
+    background: radial-gradient(circle, #f6c90e 40%, #ff9800 70%, #ff6b6b 100%);
+    position: relative; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 24px rgba(246,201,14,.5); font-size: 2rem;
+  }
+  .electron-slot {
+    position: absolute; width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(255,255,255,.3); border: 2px dashed rgba(255,255,255,.6);
+  }
+  .draggable-electron {
+    font-size: 1.5rem; cursor: grab; display: inline-block;
+    transition: transform .15s; user-select: none;
+  }
+  .draggable-electron:active { cursor: grabbing; transform: scale(1.3); }
+
+  .ruther-anim {
+    position: relative; height: 120px; background: var(--sky-light);
+    border-radius: var(--radius); margin: 0 16px 14px; overflow: hidden;
+  }
+  .ruther-nucleus {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 20px; height: 20px; border-radius: 50%; background: var(--gold);
+    box-shadow: 0 0 12px var(--gold);
+  }
+  .alpha-particle {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--sky-dark); top: 50%; transform: translateY(-50%);
+    left: -20px; animation: fireAlpha 2s infinite;
+  }
+  @keyframes fireAlpha {
+    0%{left:-20px;transform:translateY(-50%) rotate(0)}
+    45%{left:44%;transform:translateY(-50%)}
+    50%{left:44%;transform:translateY(-50%) scale(1)}
+    55%{left:52%;transform:translateY(-80%) scale(0.8)}
+    100%{left:110%;transform:translateY(-200%) scale(0.5);opacity:0}
+  }
+  .alpha-particle:nth-child(2){ top:40%; animation-delay:.5s; }
+  .alpha-particle:nth-child(3){ top:60%; animation-delay:1s; }
+
+  .bohr-orbit-wrap {
+    position: relative; width: 120px; height: 120px; margin: 0 auto;
+  }
+  .bohr-nucleus-dot {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 22px; height: 22px; border-radius: 50%; background: var(--gold);
+    box-shadow: 0 0 12px var(--gold); z-index: 2;
+  }
+  .orbit-ring {
+    position: absolute; border-radius: 50%; border: 1.5px solid rgba(94,179,228,.5);
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+  }
+  .orbit-electron {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--sky-dark); box-shadow: 0 0 6px var(--sky-dark);
+    animation: orbitSpin linear infinite;
+  }
+  @keyframes orbitSpin {
+    from{transform:rotate(0deg) translateX(var(--r)) rotate(0deg)}
+    to{transform:rotate(360deg) translateX(var(--r)) rotate(-360deg)}
+  }
+
+  /* ===== PASSWORD for dashboard ===== */
+  .pwd-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9000; padding: 20px;
+  }
+  .pwd-box {
+    background: white; border-radius: var(--radius); padding: 28px;
+    width: 100%; max-width: 360px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .pwd-box h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 12px; }
+  .pwd-box input {
+    width: 100%; padding: 12px; border: 2px solid #e2e8f0;
+    border-radius: var(--radius-sm); font-family: 'Sarabun',sans-serif;
+    font-size: 1rem; outline: none; text-align: center; letter-spacing: 6px;
+    font-weight: 700; margin-bottom: 12px;
+  }
+  .pwd-box input:focus { border-color: var(--purple-dark); }
+  .pwd-hint { font-size: .8rem; color: var(--text-light); margin-bottom: 16px; }
+
+  /* scrollable screens */
+  #screen-map, #screen-review, #screen-final, #screen-cert, #screen-dashboard {
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #screen-game { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+
+<!-- Floating decorations -->
+<div class="atom-bg" id="atomBg"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ================================ LOGIN ================================ -->
+<div class="screen active" id="screen-login">
+  <div class="z1" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;width:100%">
+    <div class="login-logo">⚛️</div>
+    <div class="login-title">ATOMIC MODEL QUEST</div>
+    <div style="font-size:1.05rem;font-weight:700;color:var(--purple-dark);margin-bottom:4px;">ภารกิจพิชิตแบบจำลองอะตอม</div>
+    <div class="login-sub">วิชาเคมี ม.4 | 60 ข้อ | 5 ด่าน + Master Challenge</div>
+    <div class="card login-card fade-in">
+      <div class="field-group">
+        <label class="field-label">👤 ชื่อ</label>
+        <input class="field-input" id="inp-firstname" type="text" placeholder="เช่น สมชาย" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label class="field-label">👤 นามสกุล</label>
+        <input class="field-input" id="inp-lastname" type="text" placeholder="เช่น ใจดี" autocomplete="off">
+      </div>
+      <div class="field-group">
+        <label class="field-label">🏫 ชั้นเรียน</label>
+        <input class="field-input" id="inp-class" type="text" placeholder="เช่น ม.4/1" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" style="width:100%;font-size:1.1rem;padding:16px;" onclick="startLogin()">
+        🚀 เริ่มภารกิจ
+      </button>
+      <button class="btn btn-outline btn-sm" style="width:100%;margin-top:10px;" onclick="showDashboard()">
+        📊 แดชบอร์ดครู
+      </button>
+    </div>
+    <div class="credit-bar z1">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์<br>โรงเรียนโพธิ์ศรีสว่างวิทยา | ปีการศึกษา 2569
+    </div>
+  </div>
+</div>
+
+<!-- ================================ STORY ================================ -->
+<div class="screen" id="screen-story">
+  <div class="stars-bg" id="starsEl"></div>
+  <div class="z1 story-content">
+    <div class="story-year" id="storyYear">ค.ศ. 2600</div>
+    <div class="story-emoji">☄️</div>
+    <div class="story-text" id="storyText">กำลังโหลด...</div>
+    <button class="btn btn-gold" id="storyBtn" onclick="proceedFromStory()">⚡ ยอมรับภารกิจ</button>
+  </div>
+</div>
+
+<!-- ================================ MAP ================================ -->
+<div class="screen" id="screen-map">
+  <div class="z1" style="padding:20px;width:100%;max-width:560px;margin:0 auto;padding-top:24px;">
+    <div class="map-header">
+      <div class="map-title">🗺️ แผนที่การเดินทาง</div>
+      <div class="player-name-tag" id="mapPlayerName">ผู้เล่น</div>
+    </div>
+    <div class="stage-grid" id="stageGrid"></div>
+    <div class="total-score-bar">
+      คะแนนรวมทั้งหมด: <span id="mapTotalScore">0</span> / 600 คะแนน
+    </div>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="btn btn-outline btn-sm" onclick="showLogin()">↩️ ออกจากเกม</button>
+    </div>
+    <div class="credit-bar" style="margin-top:16px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ REVIEW ================================ -->
+<div class="screen" id="screen-review">
+  <div class="z1" style="padding:16px;max-width:560px;margin:0 auto;width:100%;">
+    <div class="review-header" id="reviewHeader">
+      <h2 id="reviewTitle">ทบทวนบทเรียน</h2>
+      <p id="reviewSubTitle"></p>
+    </div>
+    <div class="review-infographic" id="reviewInfographic"></div>
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <button class="btn btn-primary" style="flex:1" onclick="startCurrentStage()">
+        ⚔️ เริ่มต่อสู้!
+      </button>
+      <button class="btn btn-outline" style="flex:0 0 auto" onclick="showMap()">
+        ← แผนที่
+      </button>
+    </div>
+    <div class="credit-bar">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ GAME ================================ -->
+<div class="screen" id="screen-game">
+  <div class="hud z1">
+    <div>
+      <div class="hud-title" id="hudTitle">ด่าน 1</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="hudProgress" style="width:0%"></div>
+    </div>
+    <div class="hud-score">⭐<span id="hudScore">0</span></div>
+    <div class="hud-hearts" id="hudHearts">
+      <span class="hud-heart">❤️</span>
+      <span class="hud-heart">❤️</span>
+      <span class="hud-heart">❤️</span>
+    </div>
+  </div>
+  <div class="game-body z1">
+    <div id="questionArea"></div>
+    <div class="credit-bar" style="margin-top:20px;padding-bottom:16px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ GAME OVER ================================ -->
+<div class="screen" id="screen-gameover">
+  <div class="z1">
+    <div class="gameover-emoji">💔</div>
+    <div class="gameover-title">เกมจบแล้ว!</div>
+    <div class="gameover-text">
+      หมดหัวใจแล้ว... <br>แต่อย่ายอมแพ้!<br>
+      <strong style="color:#fff;">ลองอีกครั้งแล้วพิชิตให้ได้!</strong>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+      <button class="btn btn-gold" onclick="retryStage()">🔄 เล่นด่านนี้ใหม่</button>
+      <button class="btn btn-outline" style="color:#fff;border-color:#fff;" onclick="showMap()">🗺️ กลับแผนที่</button>
+    </div>
+    <div class="credit-bar" style="color:#666;margin-top:24px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ STAGE CLEAR ================================ -->
+<div class="screen" id="screen-stageclear">
+  <div class="z1" style="text-align:center;padding:24px;">
+    <div class="clear-emoji" id="clearEmoji">🎉</div>
+    <div class="clear-title" id="clearTitle">ผ่านด่านแล้ว!</div>
+    <div style="color:var(--text-light);margin-bottom:8px;">คะแนนที่ได้</div>
+    <div class="clear-score" id="clearScore">0</div>
+    <div class="clear-stars" id="clearStars">⭐⭐⭐</div>
+    <div id="clearMessage" style="color:var(--text-light);font-size:.95rem;margin-bottom:20px;"></div>
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+      <button class="btn btn-primary" id="btnNextStage" onclick="goNextStage()">➡️ ด่านต่อไป</button>
+      <button class="btn btn-outline" onclick="showMap()">🗺️ กลับแผนที่</button>
+    </div>
+    <div class="credit-bar" style="margin-top:24px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ FINAL ================================ -->
+<div class="screen" id="screen-final">
+  <div class="z1" style="padding:24px;width:100%;max-width:480px;margin:0 auto;">
+    <div class="final-emoji" id="finalEmoji">🏆</div>
+    <div class="final-title">ภารกิจสำเร็จ!</div>
+    <div class="final-grade" id="finalGrade">0</div>
+    <div class="final-pct" id="finalPct">0%</div>
+    <div class="final-breakdown" id="finalBreakdown"></div>
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center;width:100%">
+      <button class="btn btn-gold" id="btnGetCert" onclick="showCert()" style="display:none;width:100%">
+        🎓 รับใบประกาศนียบัตร
+      </button>
+      <button class="btn btn-primary" onclick="showMap()" style="width:100%">
+        🗺️ กลับแผนที่
+      </button>
+      <button class="btn btn-outline" onclick="showLogin()" style="width:100%">
+        🔁 เริ่มใหม่ทั้งหมด
+      </button>
+    </div>
+    <div class="credit-bar" style="margin-top:20px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ CERT ================================ -->
+<div class="screen" id="screen-cert">
+  <div class="z1" style="padding:20px;width:100%;max-width:520px;margin:0 auto;">
+    <h2 style="text-align:center;font-weight:800;color:var(--purple-dark);margin-bottom:16px;">🎓 ใบประกาศนียบัตร</h2>
+    <div id="cert-canvas-wrap">
+      <div class="cert-top">
+        <div class="cert-logo">⚛️</div>
+        <div class="cert-title1">ATOMIC MODEL QUEST</div>
+        <div class="cert-title2">ภารกิจพิชิตแบบจำลองอะตอม</div>
+      </div>
+      <div class="cert-divider"></div>
+      <div class="cert-body">
+        <div class="cert-presents">ขอมอบใบประกาศนียบัตรฉบับนี้แก่</div>
+        <div class="cert-name" id="certName">—</div>
+        <div class="cert-class" id="certClass">—</div>
+        <div class="cert-achievement">
+          ผ่านกิจกรรม <strong>ATOMIC MODEL QUEST</strong><br>
+          ภารกิจพิชิตแบบจำลองอะตอม<br>วิชาเคมี ม.4
+        </div>
+        <div class="cert-score-box">
+          <div class="cert-score-item">
+            <div class="num" id="certScore">—</div>
+            <div class="lbl">คะแนน</div>
+          </div>
+          <div class="cert-score-item" style="background:var(--mint-light)">
+            <div class="num" style="color:var(--mint-dark)" id="certPct">—</div>
+            <div class="lbl">เปอร์เซ็นต์</div>
+          </div>
+          <div class="cert-score-item" style="background:var(--purple-light)">
+            <div class="num" style="color:var(--purple-dark)" id="certGrade">—</div>
+            <div class="lbl">ระดับ</div>
+          </div>
+        </div>
+      </div>
+      <div class="cert-divider"></div>
+      <div class="cert-bottom">
+        <div class="cert-school">โรงเรียนโพธิ์ศรีสว่างวิทยา</div>
+        <div class="cert-year">ปีการศึกษา 2569</div>
+        <div class="cert-sign">
+          ลงชื่อ คุณครูสุพักตร์ศิริ พืชสิงห์<br>
+          <span style="font-size:.7rem">ผู้พัฒนากิจกรรม Atomic Model Quest</span>
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:.85rem;color:var(--text-light);margin:16px 0;">
+      📷 กด Print Screen หรือ Screenshot เพื่อบันทึกใบประกาศ
+    </p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-primary" onclick="showFinal()">← กลับ</button>
+      <button class="btn btn-mint" onclick="printCert()">🖨️ พิมพ์</button>
+    </div>
+    <div class="credit-bar" style="margin-top:16px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- ================================ DASHBOARD ================================ -->
+<div class="screen" id="screen-dashboard">
+  <div class="z1" style="padding:16px;max-width:700px;margin:0 auto;width:100%;">
+    <div class="dash-header">
+      <h2>📊 แดชบอร์ดครู</h2>
+      <p>Atomic Model Quest | โรงเรียนโพธิ์ศรีสว่างวิทยา</p>
+    </div>
+    <div class="dash-stats">
+      <div class="dash-stat">
+        <div class="num" id="dashTotal">0</div>
+        <div class="lbl">นักเรียนทั้งหมด</div>
+      </div>
+      <div class="dash-stat">
+        <div class="num" id="dashAvg">—</div>
+        <div class="lbl">คะแนนเฉลี่ย</div>
+      </div>
+      <div class="dash-stat">
+        <div class="num" id="dashPass">0</div>
+        <div class="lbl">ผ่าน (≥80%)</div>
+      </div>
+    </div>
+    <div style="background:white;border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;">
+      <div style="padding:14px 16px;font-weight:700;font-size:.9rem;border-bottom:1px solid #f0f4f8;">
+        📈 กราฟคะแนนเฉลี่ยแต่ละด่าน
+      </div>
+      <div class="chart-bar-wrap" id="dashChart"></div>
+    </div>
+    <div class="dash-table-wrap">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th>ชั้น</th>
+            <th>คะแนน</th>
+            <th>%</th>
+            <th>สถานะ</th>
+            <th>เวลา</th>
+          </tr>
+        </thead>
+        <tbody id="dashTableBody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px;">ยังไม่มีข้อมูล</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="showLogin()">← กลับหน้าหลัก</button>
+      <button class="btn btn-outline btn-sm" onclick="exportCSV()">💾 ส่งออก CSV</button>
+      <button class="btn btn-outline btn-sm" onclick="clearDashData()">🗑️ ล้างข้อมูล</button>
+    </div>
+    <div class="credit-bar" style="margin-top:16px;">
+      พัฒนาโดย คุณครูสุพักตร์ศิริ พืชสิงห์ | โรงเรียนโพธิ์ศรีสว่างวิทยา
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD OVERLAY -->
+<div class="pwd-overlay" id="pwdOverlay" style="display:none;">
+  <div class="pwd-box pop-in">
+    <div style="font-size:2rem;margin-bottom:8px;">🔐</div>
+    <h3>รหัสผ่านครู</h3>
+    <div class="pwd-hint">รหัสผ่าน: 2569</div>
+    <input type="password" id="pwdInput" placeholder="••••" maxlength="8" onkeydown="if(event.key==='Enter')checkPwd()">
+    <button class="btn btn-primary" style="width:100%" onclick="checkPwd()">เข้าสู่แดชบอร์ด</button>
+    <button class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;" onclick="closePwd()">ยกเลิก</button>
+  </div>
+</div>
+
+<script>
+// ========== QUESTION BANK ==========
+const STAGES = [
+  {
+    id: 0, name: "ด่าน 1: DEMOCRITUS", shortName: "Democritus",
+    icon: "🏛️", color: "#a8d8f0",
+    scientist: "Democritus (ดีโมคริตัส)",
+    year: "ประมาณ 400 ปีก่อน ค.ศ.",
+    model: "แบบจำลองอะตอมแบบแรกสุด",
+    keyIdea: "อะตอมเป็นอนุภาคที่เล็กที่สุด แบ่งแยกไม่ได้อีกต่อไป",
+    visual: "🪨",
+    reviewArt: "🪨⚡🔬",
+    reviewFacts: ["อะตอมแบ่งแยกไม่ได้", "เป็นนักปรัชญากรีก", "คำว่า Atom มาจากภาษากรีก 'Atomos'", "แนวคิดเชิงปรัชญา ไม่ใช่การทดลอง"],
+    reviewFactsColor: ["purple", "sky", "purple", "mint"],
+    reviewContent: `<strong>Democritus (ดีโมคริตัส)</strong> นักปรัชญาชาวกรีก เสนอแนวคิดว่าถ้าเราแบ่งสสารไปเรื่อยๆ จะพบอนุภาคที่เล็กที่สุดที่ไม่สามารถแบ่งแยกได้อีก เรียกว่า <strong>"อะตอม"</strong> (Atom) มาจากภาษากรีก <strong>"Atomos"</strong> ที่แปลว่า ไม่อาจแบ่งแยกได้ แนวคิดนี้เป็นจุดเริ่มต้นของทฤษฎีอะตอม แม้จะเป็นเพียงการคาดเดา ไม่ใช่จากการทดลอง`,
+    questions: [
+      {
+        q: "ใครเป็นคนแรกที่เสนอแนวคิดว่าสสารประกอบด้วยอนุภาคที่เล็กที่สุด?",
+        img: "🏛️", imgCap: "นักปรัชญากรีกโบราณ",
+        choices: ["A. Dalton", "B. Thomson", "C. Democritus", "D. Rutherford"],
+        ans: 2,
+        hint: "นักปรัชญาชาวกรีกที่มีชีวิตอยู่ประมาณ 400 ปีก่อน ค.ศ.",
+        explain: "Democritus เป็นนักปรัชญากรีกที่เสนอแนวคิดเรื่องอะตอมเป็นคนแรก"
+      },
+      {
+        q: "คำว่า 'Atom' มาจากภาษากรีกว่าอะไร?",
+        img: "🔤", imgCap: "คำศัพท์ภาษากรีก",
+        choices: ["A. Atomic", "B. Atomos", "C. Atomo", "D. Atomas"],
+        ans: 1,
+        hint: "คำนี้แปลว่า 'ไม่อาจแบ่งแยกได้'",
+        explain: "'Atomos' แปลว่าไม่อาจแบ่งแยกได้ นั่นคือที่มาของคำว่า Atom"
+      },
+      {
+        q: "Democritus เสนอว่าอะตอมมีคุณสมบัติอย่างไร?",
+        img: "🪨", imgCap: "ก้อนหินที่แบ่งแยกไม่ได้",
+        choices: ["A. แบ่งแยกได้ไม่สิ้นสุด", "B. แบ่งแยกไม่ได้", "C. มีนิวเคลียส", "D. มีอิเล็กตรอน"],
+        ans: 1,
+        hint: "ความหมายของคำว่า Atomos",
+        explain: "Democritus เชื่อว่าอะตอมเป็นอนุภาคที่เล็กที่สุดและแบ่งแยกไม่ได้"
+      },
+      {
+        q: "แนวคิดของ Democritus เกี่ยวกับอะตอมมีพื้นฐานมาจากอะไร?",
+        img: "💭", imgCap: "การใช้ความคิดและเหตุผล",
+        choices: ["A. การทดลองในห้องแล็บ", "B. การสังเกตธรรมชาติและเหตุผล", "C. การใช้กล้องจุลทรรศน์", "D. การคำนวณทางคณิตศาสตร์"],
+        ans: 1,
+        hint: "ยุคนั้นยังไม่มีห้องทดลองวิทยาศาสตร์",
+        explain: "แนวคิดของ Democritus เป็นการใช้ความคิดเชิงปรัชญา ไม่ได้มาจากการทดลอง"
+      },
+      {
+        q: "Democritus เชื่อว่าอะตอมต่างชนิดกันมีลักษณะอย่างไร?",
+        img: "🔵🔴🟡", imgCap: "อนุภาคต่างชนิด",
+        choices: ["A. เหมือนกันทุกประการ", "B. ต่างกันในรูปร่างและขนาด", "C. ต่างกันเฉพาะสี", "D. ต่างกันเฉพาะน้ำหนัก"],
+        ans: 1,
+        hint: "ลองคิดว่าทำไมสสารถึงมีหลากหลายชนิด",
+        explain: "Democritus เชื่อว่าอะตอมต่างชนิดมีรูปร่างและขนาดต่างกัน ทำให้สสารมีสมบัติต่างกัน"
+      },
+      {
+        q: "Democritus มีชีวิตอยู่ในยุคใด?",
+        img: "📅", imgCap: "เส้นเวลาประวัติศาสตร์",
+        choices: ["A. ประมาณ ค.ศ. 400", "B. ประมาณ 400 ปีก่อน ค.ศ.", "C. ศตวรรษที่ 18", "D. ศตวรรษที่ 19"],
+        ans: 1,
+        hint: "นักปรัชญากรีกโบราณมีชีวิตอยู่ก่อนคริสตกาล",
+        explain: "Democritus มีชีวิตอยู่ประมาณ 400 ปีก่อน ค.ศ. ในยุคกรีกโบราณ"
+      },
+      {
+        q: "ข้อใดต่อไปนี้ไม่ใช่แนวคิดของ Democritus?",
+        img: "❌", imgCap: "ตัวเลือกที่ผิด",
+        choices: ["A. อะตอมแบ่งแยกไม่ได้", "B. อะตอมเป็นอนุภาคเล็กที่สุด", "C. อะตอมมีนิวเคลียสอยู่ตรงกลาง", "D. อะตอมมีรูปร่างต่างกัน"],
+        ans: 2,
+        hint: "นิวเคลียสถูกค้นพบโดยนักวิทยาศาสตร์ในยุคหลัง",
+        explain: "นิวเคลียสถูกค้นพบโดย Rutherford ซึ่งอยู่หลัง Democritus มากกว่า 2,000 ปี"
+      },
+      {
+        q: "Democritus เป็นชาวชาติใด?",
+        img: "🇬🇷", imgCap: "ธงชาติกรีก",
+        choices: ["A. อังกฤษ", "B. โรมัน", "C. กรีก", "D. อิตาลี"],
+        ans: 2,
+        hint: "เกี่ยวข้องกับวัฒนธรรมโบราณที่มีนักปรัชญาชื่อดังมากมาย",
+        explain: "Democritus เป็นนักปรัชญาชาวกรีกโบราณ"
+      },
+      {
+        q: "แนวคิดของ Democritus ถูกยอมรับอย่างกว้างขวางในยุคนั้นหรือไม่?",
+        img: "🤔", imgCap: "การถกเถียงทางปรัชญา",
+        choices: ["A. ได้รับการยอมรับทันที", "B. ไม่ได้รับการยอมรับ เพราะขัดกับความเชื่อของ Aristotle", "C. ได้รับรางวัลโนเบล", "D. ถูกนำไปทดลองในห้องแล็บทันที"],
+        ans: 1,
+        hint: "Aristotle เป็นนักปรัชญาที่มีอิทธิพลมากในยุคนั้น",
+        explain: "Aristotle ปฏิเสธแนวคิดของ Democritus ทำให้ทฤษฎีอะตอมถูกลืมไปนาน"
+      },
+      {
+        q: "สิ่งที่ Democritus เรียกว่า 'อะตอม' หมายถึงอะไร?",
+        img: "🔍", imgCap: "อนุภาคที่เล็กที่สุด",
+        choices: ["A. โมเลกุลของสสาร", "B. อนุภาคที่เล็กที่สุดที่แบ่งแยกไม่ได้", "C. นิวเคลียสของอะตอม", "D. อิเล็กตรอนวิ่งรอบนิวเคลียส"],
+        ans: 1,
+        hint: "คำว่า Atomos แปลว่าอะไร?",
+        explain: "อะตอมตามแนวคิดของ Democritus คืออนุภาคที่เล็กที่สุดซึ่งแบ่งแยกไม่ได้อีกต่อไป"
+      }
+    ]
+  },
+  {
+    id: 1, name: "ด่าน 2: DALTON LAB", shortName: "Dalton",
+    icon: "🎱", color: "#c9b1e8",
+    scientist: "John Dalton (จอห์น ดาลตัน)",
+    year: "ค.ศ. 1803",
+    model: "แบบจำลองลูกบิลเลียด",
+    keyIdea: "อะตอมเป็นทรงกลมแข็งทึบ ธาตุเดียวกันมีมวลเท่ากัน",
+    visual: "🎱",
+    reviewArt: "🎱🔵⚫",
+    reviewFacts: ["ลูกบิลเลียด (Billiard Ball)", "ทรงกลมแข็งทึบ", "ธาตุเดียวกัน มวลเท่ากัน", "ค.ศ. 1803"],
+    reviewFactsColor: ["purple", "sky", "mint", "purple"],
+    reviewContent: `<strong>John Dalton (ค.ศ. 1803)</strong> เป็นคนแรกที่เสนอทฤษฎีอะตอมโดยใช้หลักฐานทางวิทยาศาสตร์ เขาเสนอว่าอะตอมมีลักษณะเหมือน<strong>ลูกบิลเลียด</strong> คือทรงกลม แข็งทึบ ไม่มีโครงสร้างภายใน ธาตุชนิดเดียวกันมีอะตอมที่มีมวลและสมบัติเหมือนกัน การเกิดสารประกอบเกิดจากการรวมตัวของอะตอมต่างชนิดในอัตราส่วนที่แน่นอน`,
+    questions: [
+      {
+        q: "แบบจำลองอะตอมของ Dalton มีลักษณะคล้ายกับสิ่งใด?",
+        img: "🎱", imgCap: "ลูกบิลเลียดทรงกลม",
+        choices: ["A. ก้อนเมฆ", "B. ลูกบิลเลียด", "C. แตงโม", "D. ดวงอาทิตย์"],
+        ans: 1,
+        hint: "เป็นลูกกลมๆ แข็งทึบที่ใช้เล่นบนโต๊ะสีเขียว",
+        explain: "Dalton เสนอว่าอะตอมมีลักษณะเหมือนลูกบิลเลียด คือทรงกลม แข็งทึบ"
+      },
+      {
+        q: "ตามทฤษฎีของ Dalton ธาตุชนิดเดียวกันมีอะตอมที่มีคุณสมบัติอย่างไร?",
+        img: "⚖️", imgCap: "ตาชั่งที่สมดุล",
+        choices: ["A. ต่างกันทุกอะตอม", "B. เหมือนกันทุกประการ", "C. ต่างกันเฉพาะขนาด", "D. เหมือนกันเฉพาะสี"],
+        ans: 1,
+        hint: "คิดถึงสมบัติของธาตุบริสุทธิ์",
+        explain: "Dalton เสนอว่าธาตุชนิดเดียวกันมีอะตอมที่มีมวลและสมบัติเหมือนกันทุกประการ"
+      },
+      {
+        q: "Dalton เสนอทฤษฎีอะตอมในปี ค.ศ. ใด?",
+        img: "📅", imgCap: "ปฏิทินประวัติศาสตร์",
+        choices: ["A. ค.ศ. 1700", "B. ค.ศ. 1803", "C. ค.ศ. 1897", "D. ค.ศ. 1911"],
+        ans: 1,
+        hint: "ต้นศตวรรษที่ 19",
+        explain: "John Dalton เสนอทฤษฎีอะตอมในปี ค.ศ. 1803"
+      },
+      {
+        q: "ตามแบบจำลองของ Dalton อะตอมมีลักษณะอย่างไรภายใน?",
+        img: "🔘", imgCap: "ภาพตัดขวางอะตอม",
+        choices: ["A. มีนิวเคลียสและอิเล็กตรอน", "B. มีโปรตอนและนิวตรอน", "C. ไม่มีโครงสร้างภายใน (ทึบตัน)", "D. มีชั้นอิเล็กตรอน"],
+        ans: 2,
+        hint: "เหมือนลูกบิลเลียดจริงๆ",
+        explain: "ตามแบบจำลองของ Dalton อะตอมเป็นทรงกลมทึบตัน ไม่มีโครงสร้างภายใน"
+      },
+      {
+        q: "สารประกอบเกิดขึ้นได้อย่างไรตามทฤษฎีของ Dalton?",
+        img: "🔗", imgCap: "การรวมตัวของอะตอม",
+        choices: ["A. อะตอมแตกสลาย", "B. อะตอมต่างชนิดรวมตัวในอัตราส่วนที่แน่นอน", "C. อะตอมเปลี่ยนชนิด", "D. อะตอมเพิ่มจำนวน"],
+        ans: 1,
+        hint: "H₂O = H 2 อะตอม + O 1 อะตอม",
+        explain: "สารประกอบเกิดจากอะตอมต่างชนิดรวมตัวกันในอัตราส่วนจำนวนเต็มที่แน่นอน"
+      },
+      {
+        q: "ข้อใดเป็นจุดอ่อนของทฤษฎีอะตอมของ Dalton?",
+        img: "⚠️", imgCap: "ข้อจำกัดของทฤษฎี",
+        choices: ["A. ไม่อธิบายนิวเคลียส", "B. ไม่อธิบายโปรตอน นิวตรอน และอิเล็กตรอน", "C. ไม่อธิบายระดับพลังงาน", "D. ถูกทุกข้อ"],
+        ans: 3,
+        hint: "ทฤษฎีของ Dalton เป็นทฤษฎีที่เก่าแก่ที่สุดในทางวิทยาศาสตร์",
+        explain: "ทฤษฎีของ Dalton ไม่ได้อธิบายอนุภาคภายในอะตอม เพราะยังไม่มีการค้นพบในยุคนั้น"
+      },
+      {
+        q: "Dalton เป็นนักวิทยาศาสตร์ชาวชาติใด?",
+        img: "🇬🇧", imgCap: "ธงชาติอังกฤษ",
+        choices: ["A. ฝรั่งเศส", "B. เยอรมัน", "C. อเมริกัน", "D. อังกฤษ"],
+        ans: 3,
+        hint: "ชาติที่มีการปฏิวัติอุตสาหกรรมก่อนชาติอื่น",
+        explain: "John Dalton เป็นนักเคมีชาวอังกฤษ"
+      },
+      {
+        q: "ข้อใดเป็นส่วนสำคัญของทฤษฎีอะตอมของ Dalton?",
+        img: "📋", imgCap: "หลักการสำคัญ",
+        choices: ["A. อะตอมสร้างและทำลายได้", "B. อะตอมสร้างและทำลายไม่ได้", "C. อะตอมเปลี่ยนชนิดได้", "D. อะตอมแบ่งแยกได้"],
+        ans: 1,
+        hint: "กฎการอนุรักษ์มวล",
+        explain: "Dalton เสนอว่าอะตอมสร้างและทำลายไม่ได้ ซึ่งสอดคล้องกับกฎการอนุรักษ์มวล"
+      },
+      {
+        q: "อะตอมของธาตุต่างชนิดกันตามทฤษฎี Dalton มีคุณสมบัติอย่างไร?",
+        img: "🔴🔵", imgCap: "อะตอมต่างชนิด",
+        choices: ["A. เหมือนกันทุกอย่าง", "B. ต่างกันในมวลและสมบัติ", "C. ต่างกันเฉพาะสี", "D. ต่างกันเฉพาะขนาด"],
+        ans: 1,
+        hint: "ทองคำและเหล็กมีสมบัติต่างกัน",
+        explain: "ธาตุต่างชนิดมีอะตอมที่มีมวลและสมบัติทางเคมีต่างกัน"
+      },
+      {
+        q: "อนุภาคที่ Dalton ยังไม่รู้จักในยุคของเขาคืออะไร?",
+        img: "❓", imgCap: "สิ่งที่ยังไม่ค้นพบ",
+        choices: ["A. อิเล็กตรอน โปรตอน นิวตรอน", "B. โมเลกุล", "C. ธาตุเคมี", "D. สารประกอบ"],
+        ans: 0,
+        hint: "อนุภาคย่อยของอะตอมที่ค้นพบในภายหลัง",
+        explain: "ในยุคของ Dalton ยังไม่มีการค้นพบอิเล็กตรอน โปรตอน และนิวตรอน"
+      }
+    ]
+  },
+  {
+    id: 2, name: "ด่าน 3: THOMSON ELECTRON HUNT", shortName: "Thomson",
+    icon: "🍮", color: "#a8e6cf",
+    scientist: "J.J. Thomson (เจ.เจ. ทอมสัน)",
+    year: "ค.ศ. 1897",
+    model: "แบบจำลองพลัมพุดดิ้ง",
+    keyIdea: "ค้นพบอิเล็กตรอน อะตอมเป็นทรงกลมประจุบวกที่มีอิเล็กตรอนฝังอยู่",
+    visual: "🍮",
+    reviewArt: "🍮⚡🔵",
+    reviewFacts: ["ค้นพบอิเล็กตรอน (e⁻)", "Plum Pudding Model", "ค.ศ. 1897", "ใช้หลอดรังสีแคโทด"],
+    reviewFactsColor: ["purple", "sky", "mint", "purple"],
+    reviewContent: `<strong>J.J. Thomson (ค.ศ. 1897)</strong> ค้นพบ<strong>อิเล็กตรอน</strong>โดยใช้หลอดรังสีแคโทด เขาเสนอแบบจำลอง<strong>พลัมพุดดิ้ง</strong> (Plum Pudding Model) ซึ่งเปรียบอะตอมเหมือนขนมพุดดิ้ง โดยมีประจุไฟฟ้าบวกกระจายอยู่ทั่วทรงกลม และมีอิเล็กตรอน (ประจุลบ) กระจายฝังอยู่ เหมือนลูกเกดในขนมพุดดิ้ง`,
+    questions: [
+      {
+        q: "J.J. Thomson ค้นพบอนุภาคใดในปี ค.ศ. 1897?",
+        img: "⚡", imgCap: "อนุภาคประจุลบ",
+        choices: ["A. โปรตอน", "B. นิวตรอน", "C. อิเล็กตรอน", "D. ควาร์ก"],
+        ans: 2,
+        hint: "อนุภาคที่มีประจุลบในอะตอม",
+        explain: "Thomson ค้นพบอิเล็กตรอนในปี ค.ศ. 1897 โดยใช้หลอดรังสีแคโทด"
+      },
+      {
+        q: "แบบจำลองอะตอมของ Thomson เปรียบเหมือนขนมชนิดใด?",
+        img: "🍮", imgCap: "ขนมพุดดิ้งมีลูกเกด",
+        choices: ["A. โดนัท", "B. พลัมพุดดิ้ง", "C. เค้กชั้น", "D. บราวนี่"],
+        ans: 1,
+        hint: "ขนมที่มีลูกเกดฝังอยู่ทั่วเนื้อขนม",
+        explain: "แบบจำลอง Plum Pudding เปรียบอะตอมเหมือนพุดดิ้งที่มีอิเล็กตรอนฝังอยู่เหมือนลูกเกด"
+      },
+      {
+        q: "ในแบบจำลองพลัมพุดดิ้ง อิเล็กตรอนอยู่ที่ใด?",
+        img: "🎯", imgCap: "ตำแหน่งอิเล็กตรอน",
+        choices: ["A. วิ่งรอบนอกอะตอม", "B. อยู่ที่ใจกลางอะตอม", "C. กระจายฝังอยู่ในทรงกลมประจุบวก", "D. อยู่เป็นชั้นๆ"],
+        ans: 2,
+        hint: "เหมือนลูกเกดในพุดดิ้ง",
+        explain: "ในแบบจำลองพลัมพุดดิ้ง อิเล็กตรอนกระจายฝังอยู่ในทรงกลมที่มีประจุบวก"
+      },
+      {
+        q: "Thomson ใช้เครื่องมือใดในการค้นพบอิเล็กตรอน?",
+        img: "🔬", imgCap: "อุปกรณ์วิทยาศาสตร์",
+        choices: ["A. กล้องจุลทรรศน์", "B. หลอดรังสีแคโทด", "C. เครื่องเร่งอนุภาค", "D. สเปกโตรมิเตอร์"],
+        ans: 1,
+        hint: "หลอดสุญญากาศที่ใช้ศึกษารังสีลึกลับ",
+        explain: "Thomson ใช้หลอดรังสีแคโทด (Cathode Ray Tube) ในการค้นพบอิเล็กตรอน"
+      },
+      {
+        q: "ประจุไฟฟ้าของอิเล็กตรอนคืออะไร?",
+        img: "➖", imgCap: "ประจุไฟฟ้า",
+        choices: ["A. บวก (+)", "B. ลบ (-)", "C. กลาง (0)", "D. เปลี่ยนแปลงได้"],
+        ans: 1,
+        hint: "ตรงข้ามกับโปรตอน",
+        explain: "อิเล็กตรอนมีประจุลบ (-1) ในขณะที่โปรตอนมีประจุบวก (+1)"
+      },
+      {
+        q: "ส่วนใดของแบบจำลองพลัมพุดดิ้งที่มีประจุบวก?",
+        img: "➕", imgCap: "ประจุบวกในอะตอม",
+        choices: ["A. อิเล็กตรอนทั้งหมด", "B. ทรงกลมที่อิเล็กตรอนฝังอยู่", "C. ชั้นนอกสุด", "D. ใจกลางอะตอม"],
+        ans: 1,
+        hint: "เหมือนเนื้อพุดดิ้งที่ห่อหุ้มลูกเกด",
+        explain: "ทรงกลมหลักของอะตอมมีประจุบวกกระจายอยู่ทั่ว ในขณะที่อิเล็กตรอนมีประจุลบ"
+      },
+      {
+        q: "Thomson ค้นพบอิเล็กตรอนในปีใด?",
+        img: "📅", imgCap: "ปีแห่งการค้นพบ",
+        choices: ["A. ค.ศ. 1803", "B. ค.ศ. 1897", "C. ค.ศ. 1911", "D. ค.ศ. 1913"],
+        ans: 1,
+        hint: "ปลายศตวรรษที่ 19",
+        explain: "J.J. Thomson ค้นพบอิเล็กตรอนในปี ค.ศ. 1897"
+      },
+      {
+        q: "การค้นพบอิเล็กตรอนสำคัญอย่างไร?",
+        img: "💡", imgCap: "ความสำคัญทางวิทยาศาสตร์",
+        choices: ["A. พิสูจน์ว่าอะตอมแบ่งแยกไม่ได้", "B. แสดงว่าอะตอมมีโครงสร้างภายใน", "C. ยืนยันแบบจำลองของ Dalton", "D. ค้นพบนิวเคลียส"],
+        ans: 1,
+        hint: "หากมีอิเล็กตรอน อะตอมต้องมีโครงสร้างภายใน",
+        explain: "การค้นพบอิเล็กตรอนแสดงว่าอะตอมไม่ได้เป็นทรงกลมทึบตันอีกต่อไป แต่มีโครงสร้างภายใน"
+      },
+      {
+        q: "อะตอมมีประจุไฟฟ้าสุทธิเท่าไรตามแบบจำลองพลัมพุดดิ้ง?",
+        img: "⚡", imgCap: "ความสมดุลของประจุ",
+        choices: ["A. บวก", "B. ลบ", "C. เป็นกลาง", "D. เปลี่ยนแปลงได้"],
+        ans: 2,
+        hint: "ประจุบวกและประจุลบในอะตอมต้องสมดุลกัน",
+        explain: "อะตอมมีประจุเป็นกลาง เพราะประจุบวกและประจุลบ (อิเล็กตรอน) มีปริมาณเท่ากัน"
+      },
+      {
+        q: "อิเล็กตรอนที่ Thomson ค้นพบมาจากส่วนใดของหลอดรังสีแคโทด?",
+        img: "💻", imgCap: "หลอดรังสีแคโทด",
+        choices: ["A. ขั้วบวก (Anode)", "B. ขั้วลบ (Cathode)", "C. ผนังหลอด", "D. แก๊สในหลอด"],
+        ans: 1,
+        hint: "Cathode แปลว่า ขั้วลบ",
+        explain: "รังสีแคโทดออกมาจากขั้วลบ (Cathode) นั่นคืออิเล็กตรอนที่มีประจุลบ"
+      }
+    ]
+  },
+  {
+    id: 3, name: "ด่าน 4: RUTHERFORD GOLD FOIL", shortName: "Rutherford",
+    icon: "🥇", color: "#f6c90e",
+    scientist: "Ernest Rutherford (เออร์เนสต์ รัทเทอร์ฟอร์ด)",
+    year: "ค.ศ. 1911",
+    model: "แบบจำลองนิวเคลียร์",
+    keyIdea: "อะตอมมีนิวเคลียสที่มีขนาดเล็กแต่มีมวลมาก อิเล็กตรอนวิ่งรอบนอก",
+    visual: "🥇",
+    reviewArt: "💛⚡🔬",
+    reviewFacts: ["ค้นพบนิวเคลียส", "Gold Foil Experiment", "ค.ศ. 1911", "นิวเคลียสมีประจุบวก"],
+    reviewFactsColor: ["purple", "sky", "mint", "purple"],
+    reviewContent: `<strong>Ernest Rutherford (ค.ศ. 1911)</strong> ทำการทดลองยิงอนุภาคแอลฟาผ่าน<strong>แผ่นทองคำบางมาก</strong> พบว่าอนุภาคส่วนใหญ่ผ่านได้ตรงๆ แต่มีบางส่วนเบี่ยงเบนหรือสะท้อนกลับ นำไปสู่การค้นพบ<strong>นิวเคลียส</strong> ซึ่งมีขนาดเล็กมากแต่มีมวลมาก มีประจุบวก และอยู่ตรงกลางอะตอม ส่วนอิเล็กตรอนวิ่งอยู่รอบๆ`,
+    questions: [
+      {
+        q: "Rutherford ทำการทดลองอะไรที่นำไปสู่การค้นพบนิวเคลียส?",
+        img: "🥇", imgCap: "แผ่นทองคำบาง",
+        choices: ["A. การทดลองหลอดรังสีแคโทด", "B. การทดลองแผ่นทองคำ (Gold Foil Experiment)", "C. การทดลองสเปกตรัม", "D. การทดลองไฟฟ้า"],
+        ans: 1,
+        hint: "ใช้แผ่นโลหะมีค่าสีเหลือง",
+        explain: "Rutherford ยิงอนุภาคแอลฟาผ่านแผ่นทองคำบางมาก ซึ่งเรียกว่า Gold Foil Experiment"
+      },
+      {
+        q: "ผลการทดลอง Gold Foil ที่น่าแปลกใจที่สุดคืออะไร?",
+        img: "😲", imgCap: "ผลที่ไม่คาดคิด",
+        choices: ["A. อนุภาคทั้งหมดผ่านตรงๆ", "B. มีบางอนุภาคสะท้อนกลับมา", "C. อนุภาคหายไปหมด", "D. อนุภาคเกิดระเบิด"],
+        ans: 1,
+        hint: "Rutherford บอกว่ามันน่าแปลกใจมาก เหมือนยิงกระสุนใส่กระดาษแล้วกระสุนสะท้อนกลับ",
+        explain: "การที่อนุภาคบางส่วนสะท้อนกลับชี้ให้เห็นว่ามีส่วนที่แข็งแกร่งและหนาแน่นมากอยู่ตรงกลาง"
+      },
+      {
+        q: "Rutherford ค้นพบอะไรจากการทดลอง Gold Foil?",
+        img: "💡", imgCap: "การค้นพบสำคัญ",
+        choices: ["A. อิเล็กตรอน", "B. โปรตอน", "C. นิวเคลียส", "D. นิวตรอน"],
+        ans: 2,
+        hint: "ส่วนที่มีมวลมากและมีประจุบวกอยู่กลางอะตอม",
+        explain: "Rutherford ค้นพบนิวเคลียส ซึ่งเป็นส่วนกลางของอะตอมที่มีมวลมากและมีประจุบวก"
+      },
+      {
+        q: "นิวเคลียสที่ Rutherford ค้นพบมีลักษณะอย่างไร?",
+        img: "🎯", imgCap: "ลักษณะนิวเคลียส",
+        choices: ["A. ขนาดใหญ่และเบา", "B. ขนาดเล็กมาก มีมวลมาก มีประจุบวก", "C. ขนาดใหญ่ มีประจุลบ", "D. กระจายทั่วอะตอม"],
+        ans: 1,
+        hint: "ถ้าอะตอมเท่ากับสนามฟุตบอล นิวเคลียสก็เท่ากับเหรียญเล็กๆ",
+        explain: "นิวเคลียสมีขนาดเล็กมากแต่มีมวลมาก และมีประจุบวก"
+      },
+      {
+        q: "อิเล็กตรอนอยู่ที่ใดในแบบจำลองของ Rutherford?",
+        img: "🌀", imgCap: "การเคลื่อนที่ของอิเล็กตรอน",
+        choices: ["A. อยู่ในนิวเคลียส", "B. ฝังอยู่ในทรงกลมประจุบวก", "C. วิ่งรอบนิวเคลียสในอวกาศว่าง", "D. อยู่เป็นชั้นพลังงาน"],
+        ans: 2,
+        hint: "เหมือนดาวเคราะห์วิ่งรอบดวงอาทิตย์",
+        explain: "ในแบบจำลองของ Rutherford อิเล็กตรอนวิ่งอยู่รอบนิวเคลียสในอวกาศว่างเวิ้งนั้น"
+      },
+      {
+        q: "ทำไมอนุภาคแอลฟาส่วนใหญ่จึงผ่านแผ่นทองคำได้ตรงๆ?",
+        img: "🌌", imgCap: "อวกาศว่างในอะตอม",
+        choices: ["A. แผ่นทองคำบางเกินไป", "B. อะตอมส่วนใหญ่เป็นอวกาศว่าง", "C. อนุภาคมีประจุเหมือนกัน", "D. ทองคำไม่แข็งพอ"],
+        ans: 1,
+        hint: "อะตอมมีขนาดใหญ่ แต่นิวเคลียสมีขนาดเล็กมาก",
+        explain: "อะตอมส่วนใหญ่เป็นอวกาศว่าง นิวเคลียสมีขนาดเล็กมาก จึงทำให้อนุภาคส่วนใหญ่ผ่านได้"
+      },
+      {
+        q: "Rutherford เสนอทฤษฎีนี้ในปีใด?",
+        img: "📅", imgCap: "ปีที่เสนอทฤษฎี",
+        choices: ["A. ค.ศ. 1897", "B. ค.ศ. 1903", "C. ค.ศ. 1911", "D. ค.ศ. 1926"],
+        ans: 2,
+        hint: "ต้นศตวรรษที่ 20",
+        explain: "Rutherford เสนอแบบจำลองนิวเคลียสในปี ค.ศ. 1911"
+      },
+      {
+        q: "ประจุของนิวเคลียสคืออะไร?",
+        img: "➕", imgCap: "ประจุในนิวเคลียส",
+        choices: ["A. ลบ", "B. กลาง", "C. บวก", "D. เปลี่ยนแปลง"],
+        ans: 2,
+        hint: "ตรงข้ามกับอิเล็กตรอนที่มีประจุลบ",
+        explain: "นิวเคลียสมีประจุบวก เนื่องจากประกอบด้วยโปรตอนที่มีประจุบวก"
+      },
+      {
+        q: "ข้อใดเป็นจุดอ่อนของแบบจำลองอะตอมของ Rutherford?",
+        img: "⚠️", imgCap: "ข้อจำกัด",
+        choices: ["A. ไม่บอกว่านิวเคลียสอยู่ที่ไหน", "B. ไม่อธิบายว่าทำไมอิเล็กตรอนไม่ตกลงไปในนิวเคลียส", "C. ไม่มีอิเล็กตรอน", "D. ไม่มีนิวเคลียส"],
+        ans: 1,
+        hint: "อิเล็กตรอนที่วิ่งวนควรจะเสียพลังงานและตกลงไปหานิวเคลียส",
+        explain: "แบบจำลองของ Rutherford ไม่สามารถอธิบายได้ว่าทำไมอิเล็กตรอนไม่ตกลงไปในนิวเคลียสตามกฎแม่เหล็กไฟฟ้า"
+      },
+      {
+        q: "อนุภาคแอลฟาที่ใช้ในการทดลองมีประจุอย่างไร?",
+        img: "⚛️", imgCap: "อนุภาคแอลฟา",
+        choices: ["A. ลบ", "B. กลาง", "C. บวก", "D. เปลี่ยนแปลงได้"],
+        ans: 2,
+        hint: "อนุภาคแอลฟาคือนิวเคลียสของธาตุฮีเลียม",
+        explain: "อนุภาคแอลฟาคือนิวเคลียสของฮีเลียม (2 โปรตอน + 2 นิวตรอน) จึงมีประจุบวก"
+      }
+    ]
+  },
+  {
+    id: 4, name: "ด่าน 5: BOHR GALAXY", shortName: "Bohr",
+    icon: "🌌", color: "#c9b1e8",
+    scientist: "Niels Bohr (นีลส์ โบร์)",
+    year: "ค.ศ. 1913",
+    model: "แบบจำลองโบร์",
+    keyIdea: "อิเล็กตรอนวิ่งรอบนิวเคลียสในวงโคจรที่มีระดับพลังงานแน่นอน",
+    visual: "🌌",
+    reviewArt: "🌌🔵⚡",
+    reviewFacts: ["วงโคจรพลังงานแน่นอน", "อิเล็กตรอนกระโดดระดับพลังงาน", "ค.ศ. 1913", "อธิบายสเปกตรัมไฮโดรเจน"],
+    reviewFactsColor: ["purple", "sky", "mint", "purple"],
+    reviewContent: `<strong>Niels Bohr (ค.ศ. 1913)</strong> ปรับปรุงแบบจำลองของ Rutherford โดยเสนอว่าอิเล็กตรอนวิ่งรอบนิวเคลียสใน<strong>วงโคจรที่มีระดับพลังงานแน่นอน</strong> (Energy Level) เรียกว่า K, L, M, N... เมื่ออิเล็กตรอนกระโดดจากระดับพลังงานสูงลงมาต่ำ จะ<strong>คายพลังงานในรูปแสง</strong> ซึ่งอธิบายสเปกตรัมของไฮโดรเจนได้`,
+    questions: [
+      {
+        q: "แบบจำลองของ Bohr แก้ไขปัญหาใดของแบบจำลอง Rutherford?",
+        img: "🔧", imgCap: "การปรับปรุงทฤษฎี",
+        choices: ["A. ไม่มีนิวเคลียส", "B. อิเล็กตรอนตกลงไปในนิวเคลียส", "C. อะตอมมีประจุลบ", "D. อะตอมไม่มีอิเล็กตรอน"],
+        ans: 1,
+        hint: "Bohr เสนอว่าอิเล็กตรอนอยู่ในวงโคจรที่มีพลังงานแน่นอน",
+        explain: "Bohr แก้ปัญหาที่ว่าทำไมอิเล็กตรอนไม่ตกลงไปในนิวเคลียส โดยเสนอว่ามีวงโคจรพลังงานแน่นอน"
+      },
+      {
+        q: "ตามแบบจำลองโบร์ อิเล็กตรอนอยู่ที่ใด?",
+        img: "🌌", imgCap: "วงโคจรอิเล็กตรอน",
+        choices: ["A. กระจายทั่วอะตอม", "B. อยู่ในวงโคจรที่มีระดับพลังงานแน่นอน", "C. อยู่ในนิวเคลียส", "D. อยู่นอกอะตอม"],
+        ans: 1,
+        hint: "K, L, M, N คือระดับพลังงาน",
+        explain: "Bohr เสนอว่าอิเล็กตรอนอยู่ในวงโคจรที่มีระดับพลังงานแน่นอน เรียกว่า K, L, M, N..."
+      },
+      {
+        q: "Bohr เสนอทฤษฎีนี้ในปีใด?",
+        img: "📅", imgCap: "ปีที่สำคัญ",
+        choices: ["A. ค.ศ. 1897", "B. ค.ศ. 1911", "C. ค.ศ. 1913", "D. ค.ศ. 1926"],
+        ans: 2,
+        hint: "หลัง Rutherford 2 ปี",
+        explain: "Bohr เสนอแบบจำลองในปี ค.ศ. 1913 หลังจาก Rutherford เสนอนิวเคลียสในปี 1911"
+      },
+      {
+        q: "เมื่ออิเล็กตรอนกระโดดจากระดับพลังงานสูงลงมาต่ำ จะเกิดอะไร?",
+        img: "💡", imgCap: "การปลดปล่อยพลังงาน",
+        choices: ["A. ดูดกลืนพลังงาน", "B. ไม่มีการเปลี่ยนแปลง", "C. คายพลังงานในรูปแสงหรือคลื่นแม่เหล็กไฟฟ้า", "D. อะตอมระเบิด"],
+        ans: 2,
+        hint: "ไฟฟ้าแสงสว่างทำงานตามหลักการนี้",
+        explain: "เมื่ออิเล็กตรอนตกลงมาจากระดับพลังงานสูง จะคายพลังงานออกมาในรูปของแสงหรือคลื่นแม่เหล็กไฟฟ้า"
+      },
+      {
+        q: "วงโคจรชั้นแรกของอิเล็กตรอนเรียกว่าอะไร?",
+        img: "⭕", imgCap: "วงโคจรชั้นแรก",
+        choices: ["A. วง L", "B. วง M", "C. วง K", "D. วง N"],
+        ans: 2,
+        hint: "ตัวอักษรต้นๆ ของตัวอักษรภาษาอังกฤษ",
+        explain: "วงโคจรชั้นแรกที่อยู่ใกล้นิวเคลียสที่สุดเรียกว่าวง K (n=1)"
+      },
+      {
+        q: "แบบจำลองโบร์อธิบายปรากฏการณ์ใดได้ดีมาก?",
+        img: "🌈", imgCap: "แสงสีต่างๆ",
+        choices: ["A. การค้นพบนิวตรอน", "B. สเปกตรัมการปล่อยแสงของไฮโดรเจน", "C. การเกิดปฏิกิริยาเคมี", "D. ความหนาแน่นของสสาร"],
+        ans: 1,
+        hint: "สายรุ้งของธาตุไฮโดรเจน",
+        explain: "แบบจำลองโบร์อธิบายสเปกตรัมการปล่อยแสงของไฮโดรเจนได้อย่างถูกต้อง"
+      },
+      {
+        q: "เมื่ออิเล็กตรอนดูดกลืนพลังงาน จะเกิดอะไร?",
+        img: "⬆️", imgCap: "การดูดพลังงาน",
+        choices: ["A. กระโดดลงไประดับพลังงานต่ำ", "B. กระโดดขึ้นไประดับพลังงานสูง", "C. ออกจากอะตอม", "D. เข้าไปในนิวเคลียส"],
+        ans: 1,
+        hint: "พลังงานมากขึ้น = ระดับพลังงานสูงขึ้น",
+        explain: "เมื่ออิเล็กตรอนดูดกลืนพลังงาน มันจะกระโดดขึ้นไปยังระดับพลังงานที่สูงกว่า"
+      },
+      {
+        q: "Bohr เป็นนักวิทยาศาสตร์ชาวชาติใด?",
+        img: "🇩🇰", imgCap: "ธงชาติ",
+        choices: ["A. อังกฤษ", "B. เยอรมัน", "C. เดนมาร์ก", "D. ฝรั่งเศส"],
+        ans: 2,
+        hint: "ประเทศในกลุ่มสแกนดิเนเวีย",
+        explain: "Niels Bohr เป็นนักฟิสิกส์ชาวเดนมาร์ก"
+      },
+      {
+        q: "วงโคจรใดที่มีพลังงานสูงที่สุด?",
+        img: "📊", imgCap: "กราฟระดับพลังงาน",
+        choices: ["A. วง K (n=1)", "B. วง L (n=2)", "C. วงที่อยู่ใกล้นิวเคลียสที่สุด", "D. วงที่อยู่ไกลนิวเคลียสที่สุด"],
+        ans: 3,
+        hint: "ยิ่งอยู่ไกลยิ่งมีพลังงานมากกว่า",
+        explain: "วงโคจรที่อยู่ไกลนิวเคลียสที่สุดมีระดับพลังงานสูงที่สุด"
+      },
+      {
+        q: "ข้อใดเป็นข้อจำกัดของแบบจำลองโบร์?",
+        img: "⚠️", imgCap: "ข้อจำกัด",
+        choices: ["A. ไม่มีนิวเคลียส", "B. ใช้ได้ดีกับไฮโดรเจน แต่ไม่แม่นยำกับอะตอมที่ซับซ้อนกว่า", "C. ไม่อธิบายอิเล็กตรอน", "D. ไม่มีวงโคจร"],
+        ans: 1,
+        hint: "ไฮโดรเจนมีอิเล็กตรอนเพียง 1 ตัว",
+        explain: "แบบจำลองโบร์ใช้ได้ดีกับไฮโดรเจน แต่ไม่แม่นยำกับอะตอมที่มีอิเล็กตรอนมากกว่า 1 ตัว"
+      }
+    ]
+  }
+];
+
+// Master Challenge - 10 random questions from all stages
+function getMasterQuestions() {
+  let pool = [];
+  STAGES.forEach((s,si) => {
+    s.questions.forEach((q,qi) => pool.push({...q, stageId:si}));
+  });
+  // shuffle
+  for(let i=pool.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
+  return pool.slice(0,10);
+}
+
+// ========== GAME STATE ==========
+let player = { name: '', class: '' };
+let stageScores = [null,null,null,null,null,null]; // null=not played
+let currentStageId = 0;
+let currentQuestions = [];
+let currentQIdx = 0;
+let hearts = 3;
+let sessionScore = 0;
+let hintUsed = false;
+let answered = false;
+let isMaster = false;
+let dashRecords = JSON.parse(localStorage.getItem('atomicDashRecords') || '[]');
+let startTime = null;
+
+// ========== SOUND ==========
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if(type==='correct') {
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime+0.1);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.4);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.4);
+    } else if(type==='wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, ctx.currentTime);
+      osc.frequency.setValueAtTime(150, ctx.currentTime+0.15);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.4);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.4);
+    } else if(type==='victory') {
+      [660,880,1100,1320].forEach((f,i) => {
+        const o2=ctx.createOscillator(); const g2=ctx.createGain();
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.frequency.value=f;
+        g2.gain.setValueAtTime(0.3,ctx.currentTime+i*0.12);
+        g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.12+0.4);
+        o2.start(ctx.currentTime+i*0.12); o2.stop(ctx.currentTime+i*0.12+0.4);
+      });
+    }
+  } catch(e){}
+}
+
+// ========== TOAST ==========
+function showToast(msg, dur=2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ========== SCREEN NAV ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function showLogin() {
+  showScreen('login');
+  player = {name:'', class:''};
+  stageScores = [null,null,null,null,null,null];
+}
+
+// ========== FLOATING ATOMS ==========
+function initAtomBg() {
+  const bg = document.getElementById('atomBg');
+  const emojis = ['⚛️','🔬','💊','🧪','⚗️','🌌','💡','🔵','🟣','🟢'];
+  for(let i=0;i<14;i++){
+    const d = document.createElement('div');
+    d.className='float-atom';
+    d.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    d.style.left = Math.random()*100+'%';
+    d.style.animationDelay = Math.random()*8+'s';
+    d.style.animationDuration = (6+Math.random()*6)+'s';
+    bg.appendChild(d);
+  }
+}
+
+// ========== STARS ==========
+function initStars() {
+  const el = document.getElementById('starsEl');
+  if(!el) return;
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const sz = 1+Math.random()*3;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s`;
+    el.appendChild(s);
+  }
+}
+
+// ========== LOGIN ==========
+function startLogin() {
+  const fn = document.getElementById('inp-firstname').value.trim();
+  const ln = document.getElementById('inp-lastname').value.trim();
+  const cl = document.getElementById('inp-class').value.trim();
+  if(!fn || !ln || !cl) { showToast('⚠️ กรุณากรอกข้อมูลให้ครบทุกช่อง'); return; }
+  player.name = fn+' '+ln;
+  player.class = cl;
+  stageScores = [null,null,null,null,null,null];
+  startTime = new Date();
+  showStory();
+}
+
+// ========== STORY ==========
+function showStory() {
+  showScreen('story');
+  initStars();
+  const lines = [
+    '<strong style="color:var(--sky)">ค.ศ. 2600</strong>',
+    'ฐานข้อมูลวิทยาศาสตร์โลก<br>ถูกไวรัสโจมตี ☠️',
+    '',
+    'แบบจำลองอะตอมทั้งหมด<strong style="color:#ff6b6b"> สูญหาย!</strong>',
+    '',
+    `<strong style="color:var(--gold)">${player.name}</strong>`,
+    'ได้รับเลือกเป็นนักเวลา',
+    'เดินทางย้อนเวลาสู่ประวัติศาสตร์',
+    'รวบรวมองค์ความรู้ของนักวิทยาศาสตร์',
+    'และกู้คืนคลังความรู้เคมีโลก! ⚗️'
+  ];
+  document.getElementById('storyText').innerHTML = lines.join('<br>');
+}
+
+function proceedFromStory() { showMap(); }
+
+// ========== MAP ==========
+function showMap() {
+  showScreen('map');
+  document.getElementById('mapPlayerName').textContent = '👤 '+player.name+' | '+player.class;
+  renderStageGrid();
+  let total = stageScores.reduce((a,v)=>a+(v||0),0);
+  document.getElementById('mapTotalScore').textContent = total;
+}
+
+function renderStageGrid() {
+  const grid = document.getElementById('stageGrid');
+  grid.innerHTML='';
+  const stageData = [
+    ...STAGES,
+    { id:5, name:'⭐ MASTER CHALLENGE', shortName:'Master', icon:'🏆', color:'#f6c90e', locked: stageScores.slice(0,5).filter(v=>v!==null).length < 3 }
+  ];
+  stageData.forEach((s,i) => {
+    const score = stageScores[i];
+    const locked = i===5 && stageData[5].locked;
+    const completed = score !== null;
+    const pct = completed ? Math.round((score/100)*100) : null;
+
+    const card = document.createElement('div');
+    card.className='stage-card'+(locked?' locked':'')+(completed?' completed':'');
+    if(i===5) card.classList.add('master-card');
+
+    let scoreStr = completed ? `<div class="stage-score-badge">✅ ${score}/100 คะแนน</div>` : '<div class="stage-score-badge">— ยังไม่ได้เล่น</div>';
+    if(i===5 && completed) scoreStr = `<div class="stage-score-badge">✅ ${score}/100 คะแนน</div>`;
+
+    let desc = '';
+    if(i<5) {
+      const st = STAGES[i];
+      desc = `<p>${st.scientist} | ${st.year}</p><div class="stage-badge">${st.model}</div>${scoreStr}`;
+    } else {
+      desc = `<p>สุ่ม 10 ข้อจากทุกด่าน</p><div class="stage-badge">${locked?'🔒 ผ่าน 3 ด่านก่อน':'10 ข้อ | 100 คะแนน'}</div>${scoreStr}`;
+    }
+
+    card.innerHTML = `<div class="stage-icon">${s.icon}</div><div class="stage-info"><h3>${s.name}</h3>${desc}</div>`;
+
+    if(!locked) {
+      card.addEventListener('click', () => {
+        currentStageId = i;
+        if(i===5) { isMaster=true; startMasterChallenge(); }
+        else { isMaster=false; showReview(i); }
+      });
+    }
+    grid.appendChild(card);
+  });
+}
+
+// ========== REVIEW ==========
+function showReview(stageIdx) {
+  showScreen('review');
+  const s = STAGES[stageIdx];
+  document.getElementById('reviewTitle').textContent = s.name;
+  document.getElementById('reviewSubTitle').textContent = s.scientist+' | '+s.year;
+
+  const inf = document.getElementById('reviewInfographic');
+  const chipColors = {'purple':'purple','sky':'sky','mint':'mint'};
+  const chips = s.reviewFacts.map((f,i)=>`<span class="fact-chip ${s.reviewFactsColor[i]}">${f}</span>`).join('');
+
+  inf.innerHTML = `
+    <div class="review-atom-art">${s.reviewArt}</div>
+    <div class="review-section">
+      <h4>🔬 นักวิทยาศาสตร์</h4>
+      <p>${s.reviewContent}</p>
+    </div>
+    <div class="review-section">
+      <h4>💡 ข้อมูลสำคัญ</h4>
+      <div class="review-key-facts">${chips}</div>
+    </div>
+    <div class="review-section">
+      <h4>🎯 แบบจำลอง</h4>
+      <p><strong>${s.model}</strong><br>${s.keyIdea}</p>
+    </div>
+  `;
+}
+
+function startCurrentStage() {
+  isMaster = false;
+  startStage(currentStageId);
+}
+
+// ========== STAGE START ==========
+function startStage(stageIdx) {
+  currentStageId = stageIdx;
+  currentQuestions = [...STAGES[stageIdx].questions];
+  hearts = 3;
+  sessionScore = 0;
+  currentQIdx = 0;
+  hintUsed = false;
+  answered = false;
+  showScreen('game');
+  document.getElementById('hudTitle').textContent = STAGES[stageIdx].shortName;
+  updateHUD();
+  renderQuestion();
+}
+
+function startMasterChallenge() {
+  isMaster = true;
+  currentStageId = 5;
+  currentQuestions = getMasterQuestions();
+  hearts = 3;
+  sessionScore = 0;
+  currentQIdx = 0;
+  showScreen('game');
+  document.getElementById('hudTitle').textContent = 'Master';
+  updateHUD();
+  renderQuestion();
+}
+
+// ========== HUD ==========
+function updateHUD() {
+  const total = currentQuestions.length;
+  document.getElementById('hudScore').textContent = sessionScore;
+  document.getElementById('hudProgress').style.width = (currentQIdx/total*100)+'%';
+  const hearts_el = document.getElementById('hudHearts');
+  hearts_el.innerHTML = '';
+  for(let i=0;i<3;i++){
+    const sp = document.createElement('span');
+    sp.className='hud-heart'+(i>=hearts?' lost':'');
+    sp.textContent='❤️';
+    hearts_el.appendChild(sp);
+  }
+}
+
+// ========== RENDER QUESTION ==========
+function renderQuestion() {
+  if(currentQIdx >= currentQuestions.length) {
+    stageClear();
+    return;
+  }
+  hintUsed = false;
+  answered = false;
+  const q = currentQuestions[currentQIdx];
+  const num = currentQIdx+1;
+  const total = currentQuestions.length;
+
+  // Special mini-game visuals for some stages
+  let specialHtml = '';
+  const stId = isMaster ? (q.stageId||0) : currentStageId;
+  if(stId === 2 && num === 3) {
+    specialHtml = renderThomsonMini();
+  } else if(stId === 3 && num === 2) {
+    specialHtml = renderRutherfordAnim();
+  } else if(stId === 4 && num === 4) {
+    specialHtml = renderBohrAnim();
+  }
+
+  const choiceLetters = ['A','B','C','D'];
+  const choicesHtml = q.choices.map((c,i) => `
+    <button class="choice-btn" onclick="selectAnswer(${i})" id="choice-${i}">
+      <span class="choice-label">${choiceLetters[i]}</span>
+      <span>${c}</span>
+    </button>
+  `).join('');
+
+  const area = document.getElementById('questionArea');
+  area.innerHTML = `
+    <div class="question-card fade-in">
+      <div class="question-img-wrap">
+        <div>${q.img}</div>
+        <div class="question-img-caption">${q.imgCap}</div>
+      </div>
+      ${specialHtml}
+      <div class="question-meta">
+        <div class="question-num">ข้อ ${num}/${total} | ด่าน: ${isMaster?'Master':STAGES[stId].shortName}</div>
+        <button class="btn-hint" onclick="showHint()">💡 คำใบ้</button>
+      </div>
+      <div class="question-text">${q.q}</div>
+      <div class="hint-box" id="hintBox">${q.hint}</div>
+      <div class="choices">${choicesHtml}</div>
+      <div class="feedback-box" id="feedbackBox"></div>
+      <button class="btn btn-primary btn-next" id="btnNext" onclick="nextQuestion()">
+        ${currentQIdx+1 < currentQuestions.length ? 'ข้อต่อไป →' : '🏁 สรุปผล'}
+      </button>
+    </div>
+  `;
+}
+
+function renderThomsonMini() {
+  return `
+  <div class="mini-game-wrap">
+    <p style="font-size:.8rem;color:var(--text-light);margin-bottom:8px;">⚡ แบบจำลองพลัมพุดดิ้ง (Plum Pudding Model)</p>
+    <div class="mini-atom-target">
+      <span style="font-size:1rem;z-index:1;color:#fff;font-weight:700;">+</span>
+      <div class="electron-slot" style="top:15%;left:20%"></div>
+      <div class="electron-slot" style="top:15%;right:20%"></div>
+      <div class="electron-slot" style="bottom:20%;left:50%;transform:translateX(-50%)"></div>
+    </div>
+    <p style="font-size:.75rem;color:var(--text-light);margin-top:8px;">อิเล็กตรอน (⚡) กระจายฝังอยู่ในทรงกลมประจุบวก</p>
+  </div>`;
+}
+
+function renderRutherfordAnim() {
+  return `
+  <div class="ruther-anim">
+    <div class="ruther-nucleus"></div>
+    <div class="alpha-particle"></div>
+    <div class="alpha-particle"></div>
+    <div class="alpha-particle"></div>
+    <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-light);">
+      🎯 Gold Foil Experiment – อนุภาคแอลฟาส่วนใหญ่ผ่านได้ บางส่วนสะท้อนกลับ
+    </div>
+  </div>`;
+}
+
+function renderBohrAnim() {
+  return `
+  <div class="mini-game-wrap">
+    <p style="font-size:.8rem;color:var(--text-light);margin-bottom:8px;">🌌 แบบจำลองโบร์ – วงโคจรระดับพลังงาน</p>
+    <div class="bohr-orbit-wrap">
+      <div class="bohr-nucleus-dot"></div>
+      <div class="orbit-ring" style="width:50px;height:50px;"></div>
+      <div class="orbit-ring" style="width:80px;height:80px;"></div>
+      <div class="orbit-ring" style="width:110px;height:110px;"></div>
+      <div class="orbit-electron" style="--r:25px;top:calc(50% - 5px);left:calc(50% - 5px);animation-duration:2s;"></div>
+      <div class="orbit-electron" style="--r:40px;top:calc(50% - 5px);left:calc(50% - 5px);animation-duration:3.5s;background:var(--purple-dark);box-shadow:0 0 6px var(--purple-dark);"></div>
+    </div>
+    <p style="font-size:.75rem;color:var(--text-light);margin-top:8px;">K, L, M, N... คือระดับพลังงานวงโคจร</p>
+  </div>`;
+}
+
+// ========== ANSWER ==========
+function selectAnswer(idx) {
+  if(answered) return;
+  answered = true;
+  const q = currentQuestions[currentQIdx];
+  const isCorrect = idx === q.ans;
+
+  document.querySelectorAll('.choice-btn').forEach((btn,i) => {
+    btn.disabled = true;
+    if(i === q.ans) btn.classList.add('correct');
+    else if(i === idx && !isCorrect) btn.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('feedbackBox');
+  if(isCorrect) {
+    sessionScore += 10;
+    fb.className = 'feedback-box show correct';
+    fb.innerHTML = '✅ <strong>ถูกต้อง!</strong> +10 คะแนน<br>' + q.explain;
+    playSound('correct');
+    showToast('🎉 ถูกต้อง! +10 คะแนน');
+  } else {
+    hearts--;
+    fb.className = 'feedback-box show wrong';
+    fb.innerHTML = '❌ <strong>ยังไม่ถูก</strong><br>' + q.explain;
+    playSound('wrong');
+    showToast('💔 ยังไม่ถูก');
+    if(hearts <= 0) {
+      updateHUD();
+      setTimeout(() => showScreen('gameover'), 1200);
+      return;
+    }
+  }
+
+  updateHUD();
+  const btnNext = document.getElementById('btnNext');
+  if(btnNext) { btnNext.className='btn btn-primary btn-next show'; }
+}
+
+function showHint() {
+  if(answered) return;
+  const hb = document.getElementById('hintBox');
+  if(hb) hb.classList.toggle('show');
+}
+
+function nextQuestion() {
+  currentQIdx++;
+  renderQuestion();
+}
+
+// ========== STAGE CLEAR ==========
+function stageClear() {
+  stageScores[currentStageId] = sessionScore;
+  const maxPossible = currentQuestions.length * 10;
+  const pct = Math.round(sessionScore/maxPossible*100);
+  playSound('victory');
+  showScreen('stageclear');
+  document.getElementById('clearScore').textContent = sessionScore+'/'+maxPossible;
+
+  let stars = '⭐';
+  let msg = 'พยายามอีกนิด!';
+  if(pct>=80){ stars='⭐⭐⭐'; msg='ยอดเยี่ยม! คุณเก่งมาก!'; }
+  else if(pct>=60){ stars='⭐⭐'; msg='ดีมาก! เกือบถึงแล้ว!'; }
+  document.getElementById('clearStars').textContent = stars;
+  document.getElementById('clearMessage').textContent = msg;
+
+  let titleTxt = '🎉 ผ่านด่านแล้ว!';
+  if(currentStageId===5) { titleTxt='🏆 Master Challenge สำเร็จ!'; }
+  else if(currentStageId < STAGES.length) {
+    titleTxt = '🎉 ผ่าน '+STAGES[currentStageId].shortName+'!';
+  }
+  document.getElementById('clearTitle').textContent = titleTxt;
+
+  // Check if all done
+  const allDone = stageScores.slice(0,5).filter(v=>v!==null).length === 5;
+  const nextBtn = document.getElementById('btnNextStage');
+  if(currentStageId === 5 || allDone) {
+    if(allDone && currentStageId===4) {
+      nextBtn.textContent = '🏆 ดูผลสรุปสุดท้าย';
+      nextBtn.onclick = showFinal;
+    } else if(currentStageId===5) {
+      nextBtn.textContent = '🏆 ดูผลสรุปสุดท้าย';
+      nextBtn.onclick = showFinal;
+    } else {
+      nextBtn.textContent = '➡️ ด่านต่อไป';
+      nextBtn.onclick = goNextStage;
+    }
+  }
+
+  // Save to dashboard
+  if(currentStageId===5 || allDone) {
+    saveToDashboard();
+  }
+}
+
+function goNextStage() {
+  const next = currentStageId + 1;
+  if(next < STAGES.length) {
+    currentStageId = next;
+    isMaster = false;
+    showReview(next);
+  } else {
+    showFinal();
+  }
+}
+
+function retryStage() {
+  if(isMaster) startMasterChallenge();
+  else startStage(currentStageId);
+}
+
+// ========== FINAL ==========
+function showFinal() {
+  showScreen('final');
+  const scores = stageScores.slice(0,5);
+  const masterScore = stageScores[5];
+  const totalEarned = scores.reduce((a,v)=>a+(v||0),0) + (masterScore||0);
+  const maxTotal = 600;
+  const pct = Math.round(totalEarned/maxTotal*100);
+
+  document.getElementById('finalGrade').textContent = totalEarned+' / '+maxTotal;
+  document.getElementById('finalPct').textContent = 'คะแนนเปอร์เซ็นต์: '+pct+'%';
+
+  let emoji = '📚'; let title='ภารกิจยังไม่สมบูรณ์';
+  if(pct>=90){ emoji='🏆'; title='ยอดนักวิทยาศาสตร์!'; }
+  else if(pct>=80){ emoji='🎓'; title='ผ่านภารกิจแล้ว!'; }
+  else if(pct>=60){ emoji='⭐'; title='ดีมาก ลองอีกครั้ง!'; }
+  else { emoji='💪'; title='ฝึกฝนต่อไปนะ!'; }
+  document.getElementById('finalEmoji').textContent=emoji;
+  document.getElementById('finalTitle').textContent=title;
+
+  const breakdown = document.getElementById('finalBreakdown');
+  const stageNames=[...STAGES.map(s=>s.shortName),'Master'];
+  const maxes=[100,100,100,100,100,100];
+  let rows='<div style="font-weight:700;font-size:.95rem;margin-bottom:10px;color:var(--purple-dark);">📊 สรุปคะแนนแต่ละด่าน</div>';
+  stageScores.forEach((sc,i)=>{
+    rows+=`<div class="breakdown-row">
+      <span class="stage-name">${i===5?'⭐':STAGES[i]?.icon||'🏆'} ${stageNames[i]}</span>
+      <span class="stage-pts">${sc!==null?sc:'-'} / ${maxes[i]}</span>
+    </div>`;
+  });
+  breakdown.innerHTML=rows;
+
+  const certBtn=document.getElementById('btnGetCert');
+  if(pct>=80){ certBtn.style.display='block'; }
+  else { certBtn.style.display='none'; }
+
+  saveToDashboard();
+}
+
+// ========== CERTIFICATE ==========
+function showCert() {
+  showScreen('cert');
+  const scores = stageScores.slice(0,5);
+  const masterScore = stageScores[5];
+  const total = scores.reduce((a,v)=>a+(v||0),0)+(masterScore||0);
+  const pct = Math.round(total/600*100);
+  let grade='C';
+  if(pct>=90)grade='A';
+  else if(pct>=80)grade='B+';
+  else if(pct>=70)grade='B';
+  else if(pct>=60)grade='B-';
+  document.getElementById('certName').textContent=player.name;
+  document.getElementById('certClass').textContent=player.class;
+  document.getElementById('certScore').textContent=total+'/600';
+  document.getElementById('certPct').textContent=pct+'%';
+  document.getElementById('certGrade').textContent=grade;
+}
+
+function showFinal() {
+  showScreen('final');
+  const scores=stageScores.slice(0,5);
+  const masterScore=stageScores[5];
+  const totalEarned=scores.reduce((a,v)=>a+(v||0),0)+(masterScore||0);
+  const maxTotal=600;
+  const pct=Math.round(totalEarned/maxTotal*100);
+  document.getElementById('finalGrade').textContent=totalEarned+' / '+maxTotal;
+  document.getElementById('finalPct').textContent='คะแนนเปอร์เซ็นต์: '+pct+'%';
+  let emoji='📚';
+  if(pct>=90){emoji='🏆';}
+  else if(pct>=80){emoji='🎓';}
+  else if(pct>=60){emoji='⭐';}
+  else{emoji='💪';}
+  document.getElementById('finalEmoji').textContent=emoji;
+
+  const breakdown=document.getElementById('finalBreakdown');
+  const stageNames=[...STAGES.map(s=>s.shortName),'Master'];
+  let rows='<div style="font-weight:700;font-size:.95rem;margin-bottom:10px;color:var(--purple-dark);">📊 สรุปคะแนนแต่ละด่าน</div>';
+  stageScores.forEach((sc,i)=>{
+    rows+=`<div class="breakdown-row">
+      <span class="stage-name">${i===5?'⭐':(STAGES[i]?.icon||'🏆')} ${stageNames[i]}</span>
+      <span class="stage-pts">${sc!==null?sc:'-'} / 100</span>
+    </div>`;
+  });
+  breakdown.innerHTML=rows;
+  const certBtn=document.getElementById('btnGetCert');
+  certBtn.style.display=pct>=80?'block':'none';
+  saveToDashboard();
+}
+
+function printCert() { window.print(); }
+
+// ========== DASHBOARD ==========
+function showDashboard() {
+  document.getElementById('pwdOverlay').style.display='flex';
+  document.getElementById('pwdInput').value='';
+  setTimeout(()=>document.getElementById('pwdInput').focus(),100);
+}
+function closePwd() { document.getElementById('pwdOverlay').style.display='none'; }
+function checkPwd() {
+  const v=document.getElementById('pwdInput').value;
+  if(v==='2569'||v==='teacher') {
+    closePwd();
+    renderDashboard();
+    showScreen('dashboard');
+  } else {
+    showToast('❌ รหัสผ่านไม่ถูกต้อง');
+    document.getElementById('pwdInput').value='';
+  }
+}
+document.getElementById('pwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')checkPwd();});
+
+function saveToDashboard() {
+  const scores=stageScores.slice(0,5);
+  const masterScore=stageScores[5];
+  const total=scores.reduce((a,v)=>a+(v||0),0)+(masterScore||0);
+  const pct=Math.round(total/600*100);
+  const now=new Date();
+  const rec={
+    name:player.name, class:player.class,
+    score:total, pct:pct,
+    pass:pct>=80,
+    time:now.toLocaleTimeString('th-TH'),
+    date:now.toLocaleDateString('th-TH'),
+    stageScores:[...stageScores]
+  };
+  dashRecords.unshift(rec);
+  if(dashRecords.length>200) dashRecords=dashRecords.slice(0,200);
+  localStorage.setItem('atomicDashRecords',JSON.stringify(dashRecords));
+}
+
+function renderDashboard() {
+  dashRecords=JSON.parse(localStorage.getItem('atomicDashRecords')||'[]');
+  document.getElementById('dashTotal').textContent=dashRecords.length;
+  const passCount=dashRecords.filter(r=>r.pass).length;
+  document.getElementById('dashPass').textContent=passCount;
+  if(dashRecords.length>0){
+    const avg=Math.round(dashRecords.reduce((a,r)=>a+r.score,0)/dashRecords.length);
+    document.getElementById('dashAvg').textContent=avg;
+  }
+
+  // Chart
+  const chart=document.getElementById('dashChart');
+  if(dashRecords.length>0){
+    const stageAvgs=STAGES.map((s,i)=>{
+      const vals=dashRecords.filter(r=>r.stageScores&&r.stageScores[i]!==null).map(r=>r.stageScores[i]);
+      return vals.length>0?Math.round(vals.reduce((a,v)=>a+v,0)/vals.length):0;
+    });
+    chart.innerHTML=stageAvgs.map((avg,i)=>`
+      <div class="chart-row">
+        <div class="chart-label">${STAGES[i].shortName}</div>
+        <div class="chart-bar-bg">
+          <div class="chart-bar-fill" style="width:${avg}%;background:linear-gradient(90deg,var(--sky-dark),var(--purple-dark))">
+            ${avg>15?avg+'%':''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    chart.innerHTML='<div style="text-align:center;color:var(--text-light);padding:16px;">ยังไม่มีข้อมูล</div>';
+  }
+
+  // Table
+  const tbody=document.getElementById('dashTableBody');
+  if(dashRecords.length===0){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px;">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+  tbody.innerHTML=dashRecords.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r.name}</td>
+      <td>${r.class}</td>
+      <td><strong>${r.score}</strong>/600</td>
+      <td>${r.pct}%</td>
+      <td><span class="pass-badge ${r.pass?'pass':'fail'}">${r.pass?'✅ ผ่าน':'❌ ไม่ผ่าน'}</span></td>
+      <td style="font-size:.7rem">${r.time}</td>
+    </tr>
+  `).join('');
+}
+
+function exportCSV() {
+  if(dashRecords.length===0){showToast('ไม่มีข้อมูล');return;}
+  let csv='ลำดับ,ชื่อ-นามสกุล,ชั้น,คะแนน,เปอร์เซ็นต์,สถานะ,เวลา\n';
+  dashRecords.forEach((r,i)=>{
+    csv+=`${i+1},"${r.name}","${r.class}",${r.score},${r.pct}%,${r.pass?'ผ่าน':'ไม่ผ่าน'},"${r.time}"\n`;
+  });
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='atomic_quest_results.csv';
+  a.click();
+}
+
+function clearDashData() {
+  if(!confirm('ยืนยันการลบข้อมูลทั้งหมด?'))return;
+  dashRecords=[];
+  localStorage.removeItem('atomicDashRecords');
+  renderDashboard();
+  showToast('🗑️ ล้างข้อมูลแล้ว');
+}
+
+// ========== INIT ==========
+initAtomBg();
+</script>
+</body>
+</html>
